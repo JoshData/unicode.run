@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Unicode Debugger</title>
+
+    <link rel="stylesheet" href="lib/normalize.css" />
+
+    <script src="lib/string-split-grapheme-clusters.js"></script>
+
+    <script src="lib/unicodeCharacterDatabase.json"></script>
+    <script type="module" src="debugger.mjs"></script>
+
+    <style>
+      body
+      {
+        padding: 1em;
+        font-family: sans-serif;
+      }
+
+      #header
+      {
+        position: fixed;
+      }
+
+      #content-area
+      {
+        margin-top: 250px;
+      }
+
+      h1
+      {
+        font-size: 2rem;
+      }
+
+      tbody#output > tr
+      {
+        background-color: #EFF;
+      }
+      tbody#output > tr.every-other-row
+      {
+        background-color: #FEF;
+      }
+      tbody#output > tr.bidi
+      {
+        background-color: transparent;
+      }
+        tbody#output > tr.bidi td
+        {
+          padding: 1em .5em .5em .5em;
+        }
+
+      .egc, .codepoint_raw, .codepoint_hex
+      {
+        font-size: 130%;
+        text-align: center;
+      }
+
+      .egc, .codepoint_raw, .codepoint_hex, .codepoint_info
+      {
+        padding: .5em;
+      }
+
+      .codepoint_name
+      {
+        margin-bottom: .5em;
+      }
+
+      .codepoint_category
+      {
+        margin-right: 1em;
+        border: 1px solid grey;
+        padding: 1px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="header">
+      <table>
+        <tr>
+          <td>
+            <img src="logo.png" style="width: 2rem; height: 2rem; padding: 1rem">
+          </td>
+          <td>
+            <h1>Unicode.run</h1>
+          </td>
+        </tr>
+      </table>
+
+      <div id="input-area">
+        <p>Debug Unicode text:</p>
+        <textarea id="input" style="width: 25em; height: 4em;"></textarea>
+      </div>
+    </div>
+
+    <div id="content-area">
+
+      <p>Text length:</p>
+
+      <table>
+        <tr>
+          <td id="text-length-egcs"></td>
+          <td>Characters</td> 
+          <td>Technically called &ldquo;extended grapheme clusters&rdquo;. Apparently Swift and Elixir report lengths this way, but they may implement different EGC rules than on this page.</td>
+        </tr>
+        <tr>
+          <td id="text-length-codepoints"></td>
+          <td>Unicode Code Points</td> 
+          <td>Languages including Python, whose internal representation of text is UTF-32, will give this length.</td>
+        </tr>
+        <tr>
+          <td id="text-length-utf16"></td>
+          <td>UTF-16 Code Units</td> 
+          <td>Languages including JavaScript, C#, Java, and C, whose internal representation of text is UTF-16, will give this length.</td>
+        </tr>
+        <tr>
+          <td id="text-length-utf8"></td>
+          <td>UTF-8 Bytes</td> 
+          <td>Most files are saved in UTF-8 encoding.</td>
+        </tr>
+      </table>
+
+      <div id="warnings">
+      </div>
+
+      <p>The Unicode code points in this text are:</p>
+
+      <table>
+          <thead>
+            <tr>
+              <th rowspan=2 width=100 title="Extended Grapheme Cluster with BIDI Mirror Replacements">Displayed Character</th>
+              <th colspan=3>Code Point</th>
+            </tr>
+            <tr>
+              <th></th>
+              <th>Hex</th>
+            </tr>
+          </thead>
+          <tbody id="output">
+          </tbody>
+      </table>
+    </div>
+  </body>
+</html>
