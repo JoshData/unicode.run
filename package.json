@@ -1,6 +1,7 @@
 {
   "dependencies": {
     "bidi-js": "^1.0.3",
+    "bootstrap": "^5.3.2",
     "ucd-full": "^15.0.0"
   }
 }

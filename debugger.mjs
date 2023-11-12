@@ -8,7 +8,7 @@ const default_example_text =
   + " שלום (עולם)!"
   + " 🤦🏼‍♂️"
   + "\u202E12345\u202C"
-  + "\u20DD";
+  + "\u0333◌̑";
 
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
@@ -181,10 +181,13 @@ function debug_unicode_string(text)
   let egcs = splitGraphemeClusters(text)
     .map(cluster => {
       var codepoints = get_code_points(cluster, last_character_index);
+      codepoints = codepoints.map(get_code_point_info);
       last_character_index = codepoints[codepoints.length-1].range[1] + 1;
       return {
         character: cluster,
-        codepoints: codepoints.map(get_code_point_info),
+        cat: codepoints[0].cat, // used for display
+
+        codepoints: codepoints,
         range: [codepoints[0].range[0], codepoints[codepoints.length-1].range[1]],
 
         // Normalization
@@ -269,6 +272,14 @@ function run_unicode_debugger()
       }
     }
 
+    function displayCodePoint(codepoint)
+    {
+      let text = codepoint.character;
+      if (codepoint.cat == "Mn") // something for combining characters to attach to
+        text = "◌" + text;
+      return text;
+    }
+
     // Create the cluster display.
     let row = document.createElement('tr');
     if (i % 2 == 0)
@@ -282,7 +293,7 @@ function run_unicode_debugger()
                               + (cluster.nfd ? 1 : 0));
     cluster_cell.setAttribute('valign', 'top');
     cluster_cell.setAttribute('class', 'egc');
-    cluster_cell.innerText = cluster.character;
+    cluster_cell.innerText = displayCodePoint(cluster);
 
     row.addEventListener("mouseenter", event => {
       let textarea = document.getElementById("input");
@@ -294,10 +305,10 @@ function run_unicode_debugger()
     {
       let cell = document.createElement('td');
       row.appendChild(cell);
-      cell.setAttribute('class', 'codepoint_raw');
+      cell.setAttribute('class', 'unicode-content codepoint_raw');
       cell.setAttribute('valign', 'top');
       if (!hide_character)
-        cell.innerText = codepoint.character;
+        cell.innerText = displayCodePoint(codepoint);
 
       cell = document.createElement('td');
       row.appendChild(cell);

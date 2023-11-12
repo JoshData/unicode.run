@@ -1,15 +1,15 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="en">
   <head>
-    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
     <title>Unicode Debugger</title>
 
-    <link rel="stylesheet" href="lib/normalize.css" />
+    <link rel="stylesheet" href="lib/bootstrap.min.css"></link>
 
     <script src="lib/string-split-grapheme-clusters.js"></script>
+    <script src="lib/bootstrap.bundle.min.js"></script>
 
     <script src="lib/unicodeCharacterDatabase.json"></script>
     <script type="module" src="debugger.mjs"></script>
@@ -17,24 +17,43 @@
     <style>
       body
       {
-        padding: 1em;
         font-family: sans-serif;
+      }
+
+      .unicode-content
+      {
+        font-size: 120%;
+        font-family: sans-serif; // system fonts probably render the best
       }
 
       #header
       {
         position: fixed;
-      }
-
-      #content-area
-      {
-        margin-top: 250px;
+        width: 100%;
+        background-color: rgba(255, 255, 255, .8);
       }
 
       h1
       {
         font-size: 2rem;
       }
+
+      #text-length > div
+      {
+        display: inline-block;
+        width: 10em;
+        text-align: center;
+        cursor: default;
+      }
+        #text-length span
+        {
+          display: block;
+        }
+	#text-length span:first-child
+        {
+          font-size: 110%;
+          font-weight: bold;
+        }
 
       tbody#output > tr
       {
@@ -79,10 +98,11 @@
   </head>
   <body>
     <div id="header">
+      <div class="container">
       <table>
         <tr>
           <td>
-            <img src="logo.png" style="width: 2rem; height: 2rem; padding: 1rem">
+            <img src="logo.png" style="width: 2rem; height: 2rem; margin: 1rem 1rem 1rem 0">
           </td>
           <td>
             <h1>Unicode.run</h1>
@@ -90,38 +110,35 @@
         </tr>
       </table>
 
-      <div id="input-area">
-        <p>Debug Unicode text:</p>
-        <textarea id="input" style="width: 25em; height: 4em;"></textarea>
+      <textarea id="input" style="width: 100%; height: 3.5em; margin: 1rem 0;" class="unicode-content"
+       placeholder="Paste some text here."></textarea>
       </div>
     </div>
 
-    <div id="content-area">
+    <div id="content-area" class="container" style="padding-top: 175px">
 
-      <p>Text length:</p>
-
-      <table>
-        <tr>
-          <td id="text-length-egcs"></td>
-          <td>Characters</td> 
-          <td>Technically called &ldquo;extended grapheme clusters&rdquo;. Apparently Swift and Elixir report lengths this way, but they may implement different EGC rules than on this page.</td>
-        </tr>
-        <tr>
-          <td id="text-length-codepoints"></td>
-          <td>Unicode Code Points</td> 
-          <td>Languages including Python, whose internal representation of text is UTF-32, will give this length.</td>
-        </tr>
-        <tr>
-          <td id="text-length-utf16"></td>
-          <td>UTF-16 Code Units</td> 
-          <td>Languages including JavaScript, C#, Java, and C, whose internal representation of text is UTF-16, will give this length.</td>
-        </tr>
-        <tr>
-          <td id="text-length-utf8"></td>
-          <td>UTF-8 Bytes</td> 
-          <td>Most files are saved in UTF-8 encoding.</td>
-        </tr>
-      </table>
+      <div id="text-length">
+        <div data-bs-toggle="popover"
+             data-bs-content="Technically called &ldquo;extended grapheme clusters&rdquo;. Apparently Swift and Elixir report lengths this way, but they may implement different EGC rules than on this page.">
+          <span id="text-length-egcs"></span>
+          <span>Characters</span> 
+        </div>
+        <div data-bs-toggle="popover"
+             data-bs-content="Languages including Python, whose internal representation of text is UTF-32, will give this length.">
+          <span id="text-length-codepoints"></span>
+          <span>Unicode Code Points</span> 
+        </div>
+        <div data-bs-toggle="popover"
+             data-bs-content="Languages including JavaScript, C#, Java, and C, whose internal representation of text is UTF-16, will give this length.">
+          <span id="text-length-utf16"></span>
+          <span>UTF-16 Code Units</span> 
+        </div>
+        <div data-bs-toggle="popover"
+             data-bs-content="Most files are saved in UTF-8 encoding.">
+          <span id="text-length-utf8"></span>
+          <span>UTF-8 Bytes</span> 
+        </div>
+      </div>
 
       <div id="warnings">
       </div>
@@ -143,5 +160,13 @@
           </tbody>
       </table>
     </div>
+
+    </div> <!-- /container -->
   </body>
+
+  <script>
+const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]')
+const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl,
+  { trigger: 'hover focus' }))
+  </script>
 </html>
