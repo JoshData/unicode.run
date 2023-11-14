@@ -5,16 +5,17 @@ const encoder = new TextEncoder();
 
 const default_example_text =
   "Hi 👋🏽!"
+  + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4"; // https://tonsky.me/blog/unicode/
   + " שלום (עולם)!"
   + " 🤦🏼‍♂️"
   + "\u202E12345\u202C"
-  + "\u0333◌̑";
+  + "Å\u0333 A\u0333\u030A A\u030A\u0333"; 
 
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
 text = "(شەقامی شەوکەت سەعید (مشکۆ"; // https://blog.georeactor.com/osm-1
+text = "\u{1D160} \uFB2C" // https://www.unicode.org/faq/normalization.html -- NFC normalization is a decomposition
 */
-
 
 // Unicode Processing Functions
 function get_code_points(text, starting_index)
@@ -242,6 +243,8 @@ function run_unicode_debugger()
   let control_count = 0;
   let formatting_count = 0;
   let uncombined_combining_chars = 0;
+  let has_normalized_form_count = 0;
+  let unnormalized_count = 0;
 
   textdgb.forEach((cluster, i) => {
     // Indicate the BIDI info.
@@ -402,10 +405,23 @@ function run_unicode_debugger()
       createCodePointRow(codepoint, row, hide_character);
     });
 
-    if (cluster.nfc)
-      showDecomposition(cluster.nfc, "This character can be composed. Normalize user inputs using Unicode NFC normalization before comparison.", i);
-    if (cluster.nfd)
-      showDecomposition(cluster.nfd, "This character has a decomposition. Normalize user inputs using Unicode NFC normalization before comparison.", i);
+    // Show normalization information.
+    if (cluster.nfc && cluster.nfd && JSON.stringify(cluster.nfc) != JSON.stringify(cluster.nfd))
+    {
+      // The cluster isn't in either NFC or NFD and both
+      // forms exist and are distinct, so this is totally bad.
+      unnormalized_count++;
+      showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. This character is in a non-normalized form. There are two standard normal forms. The typically preferred form is the shorter composed form (Unicode NFC normalization) which expresses the same character as:", i);
+      showDecomposition(cluster.nfd, "The other form is the decomposed form (Unicode NFD normalization) which expresses the same character as:", i);
+    }
+    else if (cluster.nfc || cluster.nfd)
+    {
+      has_normalized_form_count++;
+      if (cluster.nfc)
+        showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the decomposed normalization form (Unicode NFD), but this character can also equivalently occur as a (typically) shorter sequence code points using Unicode NFC (composed) normalization which is typically preferred:", i);
+      else if (cluster.nfd)
+        showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but this character can also equivalently occur as a longer sequence code points including this Unicode NFD (decomposed) normalization:", i);
+    }
 
     function showDecomposition(decomposition, text, i)
     {
@@ -458,6 +474,10 @@ function run_unicode_debugger()
     addWarning("Formatting Characters: The text has invisible formatting characters.");
   if (uncombined_combining_chars)
     addWarning("Uncombined Combining Characters: The text has a combining character that is misplaced and is not combined with another character.");
+  if (unnormalized_count)
+    addWarning("Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Choose composed (NFC) or decomposed (NFD) normalization.")
+  else if (has_normalized_form_count)
+    addWarning("Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
   if (bidi_directions_count > 0)
     addWarning("Bidirectional Text: Parts of this text are rendered left-to-right and parts are rendered right-to-left.");
   if (bidi_control_count > 0)
