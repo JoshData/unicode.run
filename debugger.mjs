@@ -1,15 +1,22 @@
 import bidiFactory from './lib/bidi.min.mjs';
 
+// Ideas
+// * font variants? rarely occur except for CJK
+// * link to https://www.unicode.org/Public/UNIDATA/StandardizedVariants.txt
+// * escape sequences for popular languages, JSON, HTML entity
+// * paste a code point?
+// * edit text because some control points are not editable (like combining chars) or visible
+
 const bidi = bidiFactory();
 const encoder = new TextEncoder();
 
 const default_example_text =
   "Hi 👋🏽!"
-  + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4"; // https://tonsky.me/blog/unicode/
+  + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4" // https://tonsky.me/blog/unicode/
   + " שלום (עולם)!"
   + " 🤦🏼‍♂️"
   + "\u202E12345\u202C"
-  + "Å\u0333 A\u0333\u030A A\u030A\u0333"; 
+  + "Å\u0333 A\u0333\u030A A\u030A\u0333";
 
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
@@ -82,11 +89,33 @@ function get_code_point_info(cp)
 {
   // Adds general Unicode character database
   // data to the object.
+
+  let cp_decimal = parseInt(cp.codepoint, 16);
+  let codePointInfo = unicodeCharacterDatabase.cp[cp_decimal];
+  if (!codePointInfo)
+  {
+    // See if this code point is in a ranage.
+    unicodeCharacterDatabase.ranges.forEach(range => {
+      if (range.start <= cp_decimal && cp_decimal >= range.end)
+        codePointInfo = {
+          name: range.name.replace(/##/, "#" + cp.codepoint.toUpperCase()),
+          cat: range.cat
+        };
+    });
+  }
+  if (!codePointInfo)
+  {
+    codePointInfo = {
+      name: "Invalid Code Point",
+      cat: "??"
+    };
+  }
+
   return {
     ...cp,
     
     // Major Unicode Character Data properties
-    ...unicodeCharacterDatabase.cp[parseInt(cp.codepoint, 16)],
+    ...codePointInfo,
 
     // UTF8 representation
     utf8: encoder.encode(cp.character),
@@ -238,7 +267,7 @@ function run_unicode_debugger()
   warnings_table.innerText = ""; // clear
 
   let previous_bidi_info = null;
-  let bidi_directions_count = 0;
+  let bidi_directions = { };
   let bidi_control_count = 0;
   let control_count = 0;
   let formatting_count = 0;
@@ -263,7 +292,12 @@ function run_unicode_debugger()
       if (text != previous_bidi_info)
       {
         previous_bidi_info = text;
-        bidi_directions_count++;
+
+        // Record the BIDI directions that occur in auto and LTR
+        // modes. Since RTL mode is uncommon, warnings that
+        // punctuation can appear in both directions is unhelpful.
+        bidi_directions[cluster.bidi_level.auto % 2] = true;
+        bidi_directions[cluster.bidi_level.ltr % 2] = true;
 
         let row = document.createElement('tr');
         row.setAttribute('class', 'bidi');
@@ -295,14 +329,8 @@ function run_unicode_debugger()
                               + (cluster.nfc ? 1 : 0)
                               + (cluster.nfd ? 1 : 0));
     cluster_cell.setAttribute('valign', 'top');
-    cluster_cell.setAttribute('class', 'egc');
+    cluster_cell.setAttribute('class', 'unicode-content egc');
     cluster_cell.innerText = displayCodePoint(cluster);
-
-    row.addEventListener("mouseenter", event => {
-      let textarea = document.getElementById("input");
-      textarea.focus(); // selection doesn't show without focus
-      textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
-    })
 
     function createCodePointRow(codepoint, row, hide_character)
     {
@@ -337,18 +365,24 @@ function run_unicode_debugger()
       line2.appendChild(category_span);
       category_span.innerText = codepoint.cat;
 
+      let bidiTypeMap = {
+        L: "LTR",
+        R: "RTL",
+        AL: "RTL", // Arabic
+      };
+      if (bidiTypeMap.hasOwnProperty(codepoint.bidiType))
+      {
+        let span = document.createElement('span');
+        span.setAttribute('class', 'codepoint_category');
+        line2.appendChild(span);
+        span.innerText = bidiTypeMap[codepoint.bidiType];
+      }
+
       let textinfo = [];
 
       if (codepoint.utf16) // useful for Javascript
         textinfo.push("UTF-16: " + codepoint.utf16.map(format_codepoint_code))
 
-      let bidiTypeMap = {
-        L: "Left-to-Right",
-        R: "Righ-to-Left",
-        AL: "Righ-to-Left", // Arabic
-      };
-      if (bidiTypeMap.hasOwnProperty(codepoint.bidiType))
-        textinfo.push("BIDI: " + bidiTypeMap[codepoint.bidiType])
       if (codepoint.bidi_mirrored_replacement)
         textinfo.push("This character is replaced with its mirrored code point " + codepoint.bidi_mirrored_replacement + " in right-to-left text.");
 
@@ -403,6 +437,13 @@ function run_unicode_debugger()
         && cluster.character == cluster.codepoints[0].character;
 
       createCodePointRow(codepoint, row, hide_character);
+
+      row.addEventListener("mouseenter", event => {
+        let textarea = document.getElementById("input");
+        textarea.focus(); // selection doesn't show without focus
+        textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
+      })
+
     });
 
     // Show normalization information.
@@ -420,7 +461,7 @@ function run_unicode_debugger()
       if (cluster.nfc)
         showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the decomposed normalization form (Unicode NFD), but this character can also equivalently occur as a (typically) shorter sequence code points using Unicode NFC (composed) normalization which is typically preferred:", i);
       else if (cluster.nfd)
-        showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but this character can also equivalently occur as a longer sequence code points including this Unicode NFD (decomposed) normalization:", i);
+        showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but be aware that this character can also equivalently occur as a longer sequence of code points including this Unicode NFD (decomposed) normalization:", i);
     }
 
     function showDecomposition(decomposition, text, i)
@@ -478,10 +519,10 @@ function run_unicode_debugger()
     addWarning("Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Choose composed (NFC) or decomposed (NFD) normalization.")
   else if (has_normalized_form_count)
     addWarning("Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
-  if (bidi_directions_count > 0)
-    addWarning("Bidirectional Text: Parts of this text are rendered left-to-right and parts are rendered right-to-left.");
   if (bidi_control_count > 0)
-    addWarning("Bidirectional Control: This text has bidirectional control code points that can change the rendered order of characters.");
+    addWarning("Bidirectional Control: This text has bidirectional control code points that can change the rendered order of characters unexpectedly.");
+  else if (Object.keys(bidi_directions).length > 1)
+    addWarning("Bidirectional Text: This text includes parts that are rendered left-to-right and parts that are rendered right-to-left.");
 }
 
 function set_url_fragment_text(text) {

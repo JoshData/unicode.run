@@ -3,25 +3,38 @@ const fs = require('fs');
 // Create a Unicode character database of just
 // properties we use in the debugger.
 let db = {
-	cp: { }
+	cp: { },
+	ranges: [ ],
 };
 
 // Add character names, categories.
 let ucd = JSON.parse(fs.readFileSync('node_modules/ucd-full/UnicodeData.json'));
-ucd.UnicodeData.forEach(cp => {
-	// TODO: UnicodeData.json doesn't handle ranges well,
-	// so CJK UNIFIED IDEOGRAPH-* characters are missing.
-	// See extracted/DerivedName.json instead.
-	if (cp.codepoint)
+for (let i = 0; i < ucd.UnicodeData.length; i++)
+{
+	let cp = ucd.UnicodeData[i];
+	let range_re = /^<(.*), First>$/;
+	if (!range_re.exec(cp.name))
 	{
-		if (cp.name == "<control>" && cp.aliases)
-			cp.name = cp.aliases[0];
+		if (cp.name == "<control>" && cp['unicode1.0Name']) {
+			cp.name = cp['unicode1.0Name'];
+		}
 		db.cp[parseInt(cp.codepoint, 16)] = {
 			name: cp.name,
 			cat: cp.category
 		};
 	}
-});
+	else
+	{
+		let basename = range_re.exec(cp.name)[1];
+		db.ranges.push({
+			start: parseInt(cp.codepoint, 16),
+			end: parseInt(ucd.UnicodeData[i + 1].codepoint, 16),
+			name: basename + " ##",
+			cat: cp.category
+		})
+		i++; // skip "Last>" entry
+	}
+}
 
 // Properties
 const properties_of_interest = {
@@ -35,7 +48,6 @@ propList.PropList.forEach(range => {
 		     cp <= parseInt(range.range[1] || range.range[0], 16);
 		     cp++)
 		{
-			console.log(cp.toString(16), db.cp[cp])
 			if (!('properties' in db.cp[cp]))
 				db.cp[cp].props = [];
 			db.cp[cp].props.push(range.property)
