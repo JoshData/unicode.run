@@ -36,8 +36,11 @@ function get_code_points(text, starting_index)
   // is UTF-16 code units.
   text = text.split('').map((c, index) => {
     return {
-      character: c,
-      codepoint: c.codePointAt(0).toString(16),
+      string: c,
+      codepoint: {
+        int: c.codePointAt(0),
+        hex: c.codePointAt(0).toString(16).toUpperCase()
+      },
       range: [starting_index + index, starting_index + index],
     }
   });
@@ -48,14 +51,14 @@ function get_code_points(text, starting_index)
   let i = 0;
   while (i < text.length)
   {
-    let cp = parseInt(text[i].codepoint, 16);
+    let cp = text[i].codepoint.int;
     if (cp >= parseInt('D800', 16) && cp <= parseInt('DBFF', 16)
         && i < text.length - 1 /* i.e. there is a surrogate next */)
     {
-      let hs_str = text[i].character;
-      let ls_str = text[i + 1].character;
+      let hs_str = text[i].string;
+      let ls_str = text[i + 1].string;
       let hs_cp = cp;
-      let ls_cp = parseInt(text[i + 1].codepoint, 16);
+      let ls_cp = text[i + 1].codepoint.int;
       cp = (hs_cp - parseInt('D800', 16)) * parseInt('400', 16)
               + ls_cp - parseInt('DC00', 16)
               + parseInt('10000', 16);
@@ -65,10 +68,13 @@ function get_code_points(text, starting_index)
         // The Javascript string representation is
         // the concatenation of the two surrogate
         // pair characters.
-        character: hs_str + ls_str,
+        string: hs_str + ls_str,
 
         // This is the actual Unicode code point.
-        codepoint: cp.toString(16),
+        codepoint: {
+          int: cp,
+          hex: cp.toString(16)
+        },
 
         // The starting and ending character index.
         range: [text[i].range[0], text[i + 1].range[1]],
@@ -90,7 +96,7 @@ function get_code_point_info(cp)
   // Adds general Unicode character database
   // data to the object.
 
-  let cp_decimal = parseInt(cp.codepoint, 16);
+  let cp_decimal = cp.codepoint.int;
   let codePointInfo = unicodeCharacterDatabase.cp[cp_decimal];
   if (!codePointInfo)
   {
@@ -98,7 +104,7 @@ function get_code_point_info(cp)
     unicodeCharacterDatabase.ranges.forEach(range => {
       if (range.start <= cp_decimal && cp_decimal >= range.end)
         codePointInfo = {
-          name: range.name.replace(/##/, "#" + cp.codepoint.toUpperCase()),
+          name: range.name.replace(/##/, "#" + cp.codepoint.hex),
           cat: range.cat
         };
     });
@@ -118,10 +124,10 @@ function get_code_point_info(cp)
     ...codePointInfo,
 
     // UTF8 representation
-    utf8: encoder.encode(cp.character),
+    utf8: encoder.encode(cp.string),
 
     // BIDI
-    bidiType: bidi.getBidiCharTypeName(cp.character),
+    bidiType: bidi.getBidiCharTypeName(cp.string),
   }
 }
 
@@ -178,7 +184,7 @@ function add_bidi_levels(text, egcs)
       if (mirrored_character !== null)
         cp.bidi_mirrored_replacement = mirrored_character;
 
-      i += cp.character.length;
+      i += cp.string.length;
     });
 
     // The EGC as a whole hopefully has a single BIDI
@@ -188,8 +194,8 @@ function add_bidi_levels(text, egcs)
     // If any characters have a BIDI mirror replacement,
     // recreate the EGC using the replacements so that
     // we get a displayed character.
-    egc.character = egc.codepoints.map(cp => {
-      return cp.bidi_mirrored_replacement || cp.character;
+    egc.string = egc.codepoints.map(cp => {
+      return cp.bidi_mirrored_replacement || cp.string;
     }).join("");
   });
 
@@ -214,7 +220,7 @@ function debug_unicode_string(text)
       codepoints = codepoints.map(get_code_point_info);
       last_character_index = codepoints[codepoints.length-1].range[1] + 1;
       return {
-        character: cluster,
+        string: cluster,
         cat: codepoints[0].cat, // used for display
 
         codepoints: codepoints,
@@ -251,9 +257,9 @@ function run_unicode_debugger()
 
   // Construct the debug table.
 
-  function format_codepoint_code(hex)
+  function format_codepoint_code(cp)
   {
-    return hex.toUpperCase(); 
+    return cp.hex;
   }
 
   let code_point_count = 0;
@@ -311,7 +317,7 @@ function run_unicode_debugger()
 
     function displayCodePoint(codepoint)
     {
-      let text = codepoint.character;
+      let text = codepoint.string;
       if (codepoint.cat == "Mn") // something for combining characters to attach to
         text = "◌" + text;
       return text;
@@ -434,7 +440,7 @@ function run_unicode_debugger()
       // only one codepoint in this EGC and it hasn't been
       // BIDI mirrored.
       let hide_character = cluster.codepoints.length == 1
-        && cluster.character == cluster.codepoints[0].character;
+        && cluster.string == cluster.codepoints[0].string;
 
       createCodePointRow(codepoint, row, hide_character);
 
