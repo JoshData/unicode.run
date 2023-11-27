@@ -6,6 +6,20 @@
 
     <title>The Unicode Debugger @ unicode.run</title>
 
+    <!-- https://rsms.me/inter/ -->
+    <link rel="preconnect" href="https://rsms.me/">
+    <link rel="stylesheet" href="https://rsms.me/inter/inter.css">
+    <style>
+    :root {
+      font-family: Inter, sans-serif;
+      font-feature-settings: 'calt' 0, 'tnum' 1, 'zero' 1, 'ss02' 1;
+    }
+    @supports (font-variation-settings: normal) {
+      :root { font-family: InterVariable, sans-serif; }
+    }
+    body { font-family: inherit !important; } /* override bootstrap reset -->
+    </style>
+
     <link rel="stylesheet" href="lib/bootstrap.min.css"></link>
 
     <script src="lib/string-split-grapheme-clusters.js"></script>
@@ -17,7 +31,6 @@
     <style>
       body
       {
-        font-family: sans-serif;
       }
 
       .unicode-content
