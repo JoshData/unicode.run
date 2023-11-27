@@ -52,16 +52,16 @@ function get_code_points(text, starting_index)
   while (i < text.length)
   {
     let cp = text[i].codepoint.int;
-    if (cp >= parseInt('D800', 16) && cp <= parseInt('DBFF', 16)
+    if (cp >= 0xD800 && cp <= 0xDBFF
         && i < text.length - 1 /* i.e. there is a surrogate next */)
     {
       let hs_str = text[i].string;
       let ls_str = text[i + 1].string;
       let hs_cp = cp;
       let ls_cp = text[i + 1].codepoint.int;
-      cp = (hs_cp - parseInt('D800', 16)) * parseInt('400', 16)
-              + ls_cp - parseInt('DC00', 16)
-              + parseInt('10000', 16);
+      cp = (hs_cp - 0xD800) * 0x400
+              + ls_cp - 0xDC00
+              + 0x10000;
       
       // Merge the elements.
       text[i] = {
