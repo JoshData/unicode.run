@@ -269,6 +269,8 @@ function run_unicode_debugger()
       .join("");
   }
 
+  window.inputSelectionTargets = { };
+
   let code_point_count = 0;
   let utf16_code_units = 0;
   let utf8_length = 0;
@@ -456,6 +458,8 @@ function run_unicode_debugger()
         textarea.focus(); // selection doesn't show without focus
         textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
       })
+      for (let ci = cluster.range[0]; ci <= cluster.range[1]; ci++)
+        window.inputSelectionTargets[ci] = row;
 
     });
 
@@ -555,13 +559,31 @@ function set_url_fragment_text(text) {
 run_unicode_debugger();
 
 // Update when the hash changes.
-addEventListener("hashchange", (event) => {
-  run_unicode_debugger();
-});
-
-// Update hash when the input textarea changes.
+function scrollToSelectedText()
+{
+  return;
+  let ci = document.getElementById("input").selectionStart;
+  if (!window.inputSelectionTargets)
+    return; // debugger has not been run yet
+  if (window.inputSelectionTargets[ci])
+    window.inputSelectionTargets[ci].scrollIntoView();
+  else if (window.inputSelectionTargets[ci - 1]) // cursor is beyond the end of text
+    window.inputSelectionTargets[ci - 1].scrollIntoView();
+}
+document.getElementById("input")
+  .addEventListener("selectionchange", scrollToSelectedText);
 document.getElementById("input")
   .addEventListener("input", (event) => {
+    // Update hash when the input textarea changes.
     let text = document.getElementById("input").value;
     set_url_fragment_text(text);
+    
+    // scrollToSelectedText() is called via the hash change event
   });
+
+// Update when the hash changes.
+addEventListener("hashchange", (event) => {
+  run_unicode_debugger();
+  scrollToSelectedText();
+});
+

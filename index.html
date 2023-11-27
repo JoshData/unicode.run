@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>Unicode Debugger</title>
+    <title>The Unicode Debugger @ unicode.run</title>
 
     <link rel="stylesheet" href="lib/bootstrap.min.css"></link>
 
@@ -28,14 +28,18 @@
 
       #header
       {
-        position: fixed;
-        width: 100%;
-        background-color: rgba(255, 255, 255, .8);
+        height: 25vh;
       }
 
       h1
       {
         font-size: 2rem;
+      }
+
+      #content-area
+      {
+        height: 75vh;
+        overflow-y: scroll;
       }
 
       #text-length > div
@@ -121,7 +125,8 @@
       </div>
     </div>
 
-    <div id="content-area" class="container" style="padding-top: 175px">
+    <div id="content-area">
+      <div class="container">
 
       <div id="text-length">
         <div data-bs-toggle="popover"
@@ -165,9 +170,9 @@
           <tbody id="output">
           </tbody>
       </table>
-    </div>
 
     </div> <!-- /container -->
+    </div> <!-- /#content-area -->
   </body>
 
   <script>
