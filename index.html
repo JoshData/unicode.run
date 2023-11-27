@@ -59,6 +59,17 @@
             margin-right: .25em;
           }
 
+      #select-escape-code-format > span > span {
+        cursor: pointer;
+        color: #5577AA;
+        margin: .25em;
+        text-decoration: underline;
+      }
+        #select-escape-code-format > span > span[active] {
+          color: #4466BB;
+          font-weight: bold;
+        }
+
       tbody#output > tr
       {
         background-color: #EFF;
@@ -101,8 +112,7 @@
 
       .escapecode
       {
-        margin: 2px;
-        border: 1px solid red;
+        display: none;
       }
     </style>
   </head>
@@ -155,6 +165,12 @@
       </div>
 
       <p>The Unicode code points in this text are:</p>
+
+      <div id="select-escape-code-format">
+          Show code points as
+          <span>
+          </span>
+      </div>
 
       <table>
           <thead>

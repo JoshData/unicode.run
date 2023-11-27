@@ -1,4 +1,4 @@
-const LANGUAGE_ESCAPE_FORMATS = {
+export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_uplushex: {
     name: "Hex Code Point",
     func: function(codepoint) {
@@ -12,6 +12,7 @@ const LANGUAGE_ESCAPE_FORMATS = {
 
   codepoint_decimal: {
     name: "Decimal Code Point",
+    shortname: "Decimal",
     func: function(codepoint) {
       return codepoint;
     }
@@ -40,7 +41,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   javascript: {
-    name: "Javascript String Literal",
+    name: "Javascript String Literal Escape Code",
+    shortname: "Javascript",
     func: function(codepoint) {
       if (codepoint <= 127)
         return "\\x" + zeropadhex(codepoint, 2);
@@ -54,7 +56,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   python: {
-    name: "Python String Literal",
+    name: "Python String Literal Escape Code",
+    shortname: "Python",
     func: function(codepoint) {
       // There is also a \U{NAME} escape.
       if (codepoint <= 127)
@@ -66,7 +69,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   cpp: {
-    name: "C/C++/C# String Literal",
+    name: "C/C++/C# String Literal Escape Code",
+    shortname: "C/C++/C#",
     func: function(codepoint) {
       // The \x### escape sequence is also possible for
       // any code point, but because it accepts an arbitrary
@@ -89,7 +93,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
 
   java: {
     // https://docs.oracle.com/javase/specs/jls/se12/html/jls-3.html
-    name: "Java String Literal",
+    name: "Java String Literal Escape Code",
+    shortname: "Java",
     func: function(codepoint) {
       if (codepoint <= 65535)
         return "\\u" + zeropadhex(codepoint, 4);
@@ -101,7 +106,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
 
   swift: {
     // https://docs.swift.org/swift-book/documentation/the-swift-programming-language/stringsandcharacters/
-    name: "Swift",
+    name: "Swift String Literal Escape Code",
+    shortname: "Swift",
     func: function(codepoint) {
       return "\\u{" + zeropadhex(codepoint, 0) + "}";
     }
@@ -109,7 +115,8 @@ const LANGUAGE_ESCAPE_FORMATS = {
 
   php: {
     // https://www.php.net/manual/en/language.types.string.php
-    name: "PHP String Literal",
+    name: "PHP String Literal Escape Code",
+    shortname: "PHP",
     func: function(codepoint) {
       if (codepoint <= 127)
         return "\\x" + zeropadhex(codepoint, 2);

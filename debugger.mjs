@@ -1,5 +1,5 @@
 import bidiFactory from './lib/bidi.min.mjs';
-import { create_escapes, get_utf8_bytes } from './unicode_escapes.mjs';
+import { create_escapes, get_utf8_bytes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
 
 // Ideas
 // * font variants? rarely occur except for CJK
@@ -396,7 +396,7 @@ function run_unicode_debugger()
       let textinfo = [];
 
       if (codepoint.utf16) // useful for Javascript
-        textinfo.push("UTF-16: " + codepoint.utf16.map(format_codepoint_code))
+        textinfo.push("Two UTF-16 code units.")
 
       if (codepoint.bidi_mirrored_replacement)
         textinfo.push("This character is replaced with its mirrored code point " + codepoint.bidi_mirrored_replacement + " in right-to-left text.");
@@ -554,6 +554,45 @@ function set_url_fragment_text(text) {
   if (!fragment.get("run"))
     set_url_fragment_text(default_example_text);
 }
+
+// Prepare UI
+let firstEscapeCode = null;
+Object.keys(LANGUAGE_ESCAPE_FORMATS)
+  .forEach(key => {
+    let span = document.createElement("span");
+    span.setAttribute("data-key", key);
+    span.setAttribute("title", LANGUAGE_ESCAPE_FORMATS[key].name);
+    span.innerText = LANGUAGE_ESCAPE_FORMATS[key].shortname || LANGUAGE_ESCAPE_FORMATS[key].name;
+    document.getElementById("select-escape-code-format")
+      .querySelector("span")
+      .appendChild(span);
+    span.addEventListener("click", change_escape_code_format);
+    if (!firstEscapeCode)
+    {
+      span.setAttribute("active", "");
+      firstEscapeCode = key;
+    }
+  });
+const escapeCodeStylesheet = document.createElement("style");
+document.head.appendChild(escapeCodeStylesheet);
+const escapeCodeRules = escapeCodeStylesheet.sheet;
+function change_escape_code_format()
+{
+  let key = this.getAttribute('data-key');
+  set_escape_code_format(key);
+}
+function set_escape_code_format(key)
+{
+  document.getElementById("select-escape-code-format")
+    .querySelectorAll("span > span")
+    .forEach(elem => {
+      elem.toggleAttribute('active', elem.getAttribute('data-key') == key);
+    });
+  if (escapeCodeRules.cssRules.length > 0)
+    escapeCodeRules.deleteRule(0); 
+  escapeCodeRules.insertRule(".escapecode_" + key + " { display: block }");
+}
+set_escape_code_format(Object.keys(LANGUAGE_ESCAPE_FORMATS)[0]);
 
 // Launch immediately.
 run_unicode_debugger();
