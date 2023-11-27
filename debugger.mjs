@@ -1,4 +1,5 @@
 import bidiFactory from './lib/bidi.min.mjs';
+import { create_escapes, get_utf8_bytes } from './unicode_escapes.mjs';
 
 // Ideas
 // * font variants? rarely occur except for CJK
@@ -8,7 +9,6 @@ import bidiFactory from './lib/bidi.min.mjs';
 // * edit text because some control points are not editable (like combining chars) or visible
 
 const bidi = bidiFactory();
-const encoder = new TextEncoder();
 
 const default_example_text =
   "Hi 👋🏽!"
@@ -124,7 +124,7 @@ function get_code_point_info(cp)
     ...codePointInfo,
 
     // UTF8 representation
-    utf8: encoder.encode(cp.string),
+    utf8: get_utf8_bytes(cp.codepoint.int),
 
     // BIDI
     bidiType: bidi.getBidiCharTypeName(cp.string),
@@ -259,7 +259,14 @@ function run_unicode_debugger()
 
   function format_codepoint_code(cp)
   {
-    return cp.hex;
+    return Object.values(create_escapes(cp.int))
+      .map(language =>
+        "<span class=\"escapecode escapecode_" + language.key + "\" title=\""
+        + new Option(language.name).innerHTML
+        + "\">"
+        + new Option(language.escape).innerHTML
+        + "</span>")
+      .join("");
   }
 
   let code_point_count = 0;
@@ -351,7 +358,7 @@ function run_unicode_debugger()
       row.appendChild(cell);
       cell.setAttribute('class', 'codepoint_hex');
       cell.setAttribute('valign', 'top');
-      cell.innerText = format_codepoint_code(codepoint.codepoint);
+      cell.innerHTML = format_codepoint_code(codepoint.codepoint);
 
       cell = document.createElement('td');
       cell.setAttribute('class', 'codepoint_info');
