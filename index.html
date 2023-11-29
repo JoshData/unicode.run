@@ -36,7 +36,7 @@
       .unicode-content
       {
         font-size: 120%;
-        font-family: "Iosevka sans-serif"; // system fonts probably render the best
+        font-family: Iosevka sans-serif; /* system fonts probably render the best but Iosevka has nice language support; TODO link to it */
       }
 
       #header
@@ -72,13 +72,13 @@
             margin-right: .25em;
           }
 
-      #select-escape-code-format > span > span {
+      #select-escape-code-format a, #select-input-format a {
         cursor: pointer;
         color: #5577AA;
         margin: .25em;
         text-decoration: underline;
       }
-        #select-escape-code-format > span > span[active] {
+        #select-escape-code-format a[active], #select-input-format a[active] {
           color: #4466BB;
           font-weight: bold;
         }
@@ -143,6 +143,12 @@
         </tr>
       </table>
 
+      <div id="select-input-format">
+        Paste
+          <a data-key="text" active="" href="#" onclick="return false;">Text</a> 
+          <a data-key="utf32" href="#" onclick="return false;">UTF-32</a> 
+          <a data-key="utf16" href="#" onclick="return false;">UTF-16BE</a> 
+      </div>
       <textarea id="input" style="width: 100%; height: 3.5em; margin: 1rem 0;" class="unicode-content"
        placeholder="Paste some text here."></textarea>
       </div>

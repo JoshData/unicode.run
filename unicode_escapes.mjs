@@ -1,3 +1,5 @@
+import { codepoint_to_utf8, make_surrogate_pair, zeropadhex } from './unicode_utils.mjs'
+
 export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_uplushex: {
     name: "Hex Code Point",
@@ -19,13 +21,12 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   codepoint_utf16: {
-    name: "UTF-16",
+    name: "UTF-16 Big Endian",
+    shortname: "UTF-16BE",
     func: function(codepoint) {
-      // We're assuming big endian or little endian
-      // here, I am not sure which.
       if (codepoint <= 65535)
         return zeropadhex(codepoint, 4);
-      let sp = surrogate_pair(codepoint);
+      let sp = make_surrogate_pair(codepoint);
       return zeropadhex(sp.high, 4)
            + " " + zeropadhex(sp.low, 4);
     }
@@ -34,8 +35,8 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_utf8: {
     name: "UTF-8",
     func: function(codepoint) {
-      return get_utf8_bytes(codepoint)
-        //.map(b => zeropadhex(b, 2))
+      return codepoint_to_utf8(codepoint)
+        .map(b => zeropadhex(b, 2))
         .join(" ");
     }
   },
@@ -98,7 +99,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     func: function(codepoint) {
       if (codepoint <= 65535)
         return "\\u" + zeropadhex(codepoint, 4);
-      let sp = surrogate_pair(codepoint);
+      let sp = make_surrogate_pair(codepoint);
       return "\\u" + zeropadhex(sp.high, 4)
            + "\\u" + zeropadhex(sp.low, 4);
     }
@@ -124,52 +125,6 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     }
   },
 };
-
-export function get_utf8_bytes(codepoint)
-{
-  // Adapted from https://github.com/mathiasbynens/utf8.js/blob/master/utf8.js
-  // encodeCodePoint().
-  if ((codepoint & 0xFFFFFF80) == 0) // 1-byte sequence
-      return [codepoint];
-  function createByte(codepoint, shift) {
-    return ((codepoint >> shift) & 0x3F) | 0x80;
-  }
-  let bytes = [];
-  if ((codepoint & 0xFFFFF800) == 0) { // 2-byte sequence
-    bytes.push(((codepoint >> 6) & 0x1F) | 0xC0);
-  }
-  else if ((codepoint & 0xFFFF0000) == 0) { // 3-byte sequence
-    bytes.push(((codepoint >> 12) & 0x0F) | 0xE0);
-    bytes.push(createByte(codepoint, 6));
-  }
-  else if ((codepoint & 0xFFE00000) == 0) { // 4-byte sequence
-    bytes.push(((codepoint >> 18) & 0x07) | 0xF0);
-    bytes.push(createByte(codepoint, 12));
-    bytes.push(createByte(codepoint, 6));
-  }
-  bytes.push((codepoint & 0x3F) | 0x80);
-  return bytes;
-}
-
-function surrogate_pair(codepoint)
-{
-  var plane = 0x10000;
-  if (codepoint < plane)
-    throw "Code point is within the BMP.";
-  let x = codepoint - plane;
-  return {
-    high: parseInt("D800", 16) + (x >> 10),
-    low: parseInt("DC00", 16) + (x & parseInt("3FF", 16)),
-  };
-}
-
-function zeropadhex(num, width)
-{
-  let s = num.toString(16).toUpperCase();
-  while (s.length < width)
-    s = "0" + s;
-  return s;
-}
 
 export function create_escape(codepoint, language)
 {

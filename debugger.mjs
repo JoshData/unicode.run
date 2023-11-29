@@ -1,5 +1,6 @@
 import bidiFactory from './lib/bidi.min.mjs';
-import { create_escapes, get_utf8_bytes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
+import { codepoint_to_utf8, make_surrogate_pair, zeropadhex } from './unicode_utils.mjs';
+import { create_escapes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
 
 // Ideas
 // * font variants? rarely occur except for CJK
@@ -124,7 +125,7 @@ function get_code_point_info(cp)
     ...codePointInfo,
 
     // UTF8 representation
-    utf8: get_utf8_bytes(cp.codepoint.int),
+    utf8: codepoint_to_utf8(cp.codepoint.int),
 
     // BIDI
     bidiType: bidi.getBidiCharTypeName(cp.string),
@@ -202,7 +203,7 @@ function add_bidi_levels(text, egcs)
   return egcs;
 }
 
-function debug_unicode_string(text)
+function debug_unicode_string(text, charmap)
 {
   // Split the string into extended grapheme clusters, which
   // typically display in a single rectangular area and are
@@ -213,12 +214,24 @@ function debug_unicode_string(text)
   // that make up the character, and normalization information
   // for the EGC as a whole (since single code points don't usually
   // have meaningful normalization).
-  let last_character_index = 0;
+  let next_char_index = 0;
   let egcs = splitGraphemeClusters(text)
     .map(cluster => {
-      var codepoints = get_code_points(cluster, last_character_index);
+      var codepoints = get_code_points(cluster, next_char_index);
       codepoints = codepoints.map(get_code_point_info);
-      last_character_index = codepoints[codepoints.length-1].range[1] + 1;
+      next_char_index = codepoints[codepoints.length-1].range[1] + 1;
+
+      // Revise the input character range for each codepoint
+      // according to the map from text characters to input
+      // characters, if the input was not the text itself.
+      if (charmap)
+      {
+        codepoints.forEach(c => {
+          c.range[0] = charmap.get(c.range[0])[0];
+          c.range[1] = charmap.get(c.range[1])[1];
+        });
+      }
+
       return {
         string: cluster,
         cat: codepoints[0].cat, // used for display
@@ -238,22 +251,119 @@ function debug_unicode_string(text)
   return egcs;
 }
 
+function get_input_text()
+{
+  let text = document.getElementById("input").value;
+  let format = get_input_format();
+
+  if (format == "text")
+  {
+    // Return the text and a null character index map.
+    return { text: text,
+             charmap: null };
+  }
+
+  // Read the input as a series of hex characters
+  // giving a stream of code units by grouping
+  // sequences of 2 (UTF-8), 4 (UTF-16), or 8 (UTF-32)
+  // hex characters. If there is a remainder at the
+  // end, left-pad the last one with zeroes. This
+  // works well if there is only one code unit given,
+  // and it prevents thrashing of the text while typing.
+  // End code units at non-hex characters so that
+  // code units don't need to be zero padded.
+  //
+  // Make a mapping from code unit indexes to the starting
+  // and ending character that makes up the byte.
+  let code_units = [];
+  let read_chars = 0;
+  let code_unit_char_pos = new Map();
+  let code_unit_size = 2; // UTF-8
+  if (format == "utf16") code_unit_size = 4;
+  else if (format == "utf32") code_unit_size = 8;
+  for (let i = 0; i < text.length; i++)
+  {
+    let c = text.charAt(i);
+    if (!/[A-Za-z0-9]/.exec(c))
+    {
+      read_chars = 0; // next character starts a new code unit
+      continue;
+    }
+
+    let v = parseInt(c, 16);
+    if (read_chars % code_unit_size == 0)
+    {
+      code_units.push(v);
+      code_unit_char_pos.set(code_units.length - 1, [i, i]);
+    }
+    else
+    {
+      // shift previous value and add this one
+      let vv = code_units.pop();
+      code_units.push((vv << 4) + v);
+      code_unit_char_pos.set(code_units.length - 1,
+                           [code_unit_char_pos.get(code_units.length - 1)[0],
+                            i]);
+    }
+    read_chars++;
+  }
+
+  if (format == "utf8")
+  {
+    let decoder = new TextDecoder('utf-8');
+    text = decoder.decode(new Uint8Array(code_units));
+    return { text: text, charmap: null /* TODO */ };
+  }
+
+  if (format == "utf16")
+  {
+    // The code units match Javascript's internal
+    // representation.
+    let text = code_units.map(c => String.fromCharCode(c)).join("");
+    return { text: text, charmap: code_unit_char_pos };
+  }
+
+  if (format == "utf32")
+  {
+    // Replace code units with surrogate pairs where needed.
+    let codepoints_to_char_pos = new Map();
+    let text = "";
+    for (let i = 0; i < code_units.length; i++)
+    {
+      let c = code_units[i];
+      if (c <= 65535)
+      {
+        text += String.fromCharCode(c);
+        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
+      }
+      else
+      {
+        // Map both halves of the surrogate pair to the same original
+        // characters. They'll be combined again when we replace
+        // surrogate pairs with their code points.
+        // (It seems redundant but since the EGC function requires
+        // a Javascript string, we have to form a string and not
+        // return Unicode code points here.)
+        let sp = make_surrogate_pair(c);
+        text += String.fromCharCode(sp.high);
+        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
+        text += String.fromCharCode(sp.low);
+        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
+      }
+    }
+    return { text: text, charmap: codepoints_to_char_pos };
+  }
+}
+
 function run_unicode_debugger()
 {
-  // Get the text from this page's URL fragment.
+  // Get the text.
 
-  const fragment = new URLSearchParams(
-     window.location.hash.substring(1));
-  let text = decodeURIComponent(fragment.get("run"));
-
-  // Copy it into the textarea.
-
-  document.getElementById("input").value = text;
+  let { text, charmap } = get_input_text();
 
   // Debug the string.
 
-  var textdgb = debug_unicode_string(text);
-  console.log(textdgb);
+  var textdgb = debug_unicode_string(text, charmap);
 
   // Construct the debug table.
 
@@ -540,10 +650,24 @@ function run_unicode_debugger()
     addWarning("Bidirectional Control: This text has bidirectional control code points that can change the rendered order of characters unexpectedly.");
   else if (Object.keys(bidi_directions).length > 1)
     addWarning("Bidirectional Text: This text includes parts that are rendered left-to-right and parts that are rendered right-to-left.");
+
+  scrollToSelectedText();
 }
 
-function set_url_fragment_text(text) {
-  window.location.hash = "#run=" + encodeURIComponent(text);
+
+function set_url_fragment(text, format)
+{
+  let fragment = "#run=" + encodeURIComponent(text);
+  if (format != "text")
+    fragment += "&f=" + format;
+  window.location.hash = fragment;
+}
+
+function update_url_fragment()
+{
+    let text = document.getElementById("input").value;
+    let format = get_input_format();
+    set_url_fragment(text, format);
 }
 
 // If there is no URL fragment, set an initial
@@ -552,24 +676,26 @@ function set_url_fragment_text(text) {
   const fragment = new URLSearchParams(
      window.location.hash.substring(1));
   if (!fragment.get("run"))
-    set_url_fragment_text(default_example_text);
+    set_url_fragment(default_example_text, "text");
 }
 
-// Prepare UI
+// Create escape code display format choices and hook up events.
 let firstEscapeCode = null;
 Object.keys(LANGUAGE_ESCAPE_FORMATS)
   .forEach(key => {
-    let span = document.createElement("span");
-    span.setAttribute("data-key", key);
-    span.setAttribute("title", LANGUAGE_ESCAPE_FORMATS[key].name);
-    span.innerText = LANGUAGE_ESCAPE_FORMATS[key].shortname || LANGUAGE_ESCAPE_FORMATS[key].name;
+    let choice = document.createElement("a");
+    choice.setAttribute("data-key", key);
+    choice.setAttribute("title", LANGUAGE_ESCAPE_FORMATS[key].name);
+    choice.setAttribute("href", "#");
+    choice.setAttribute("onclick", "return false;"); // disable page navigation
+    choice.innerText = LANGUAGE_ESCAPE_FORMATS[key].shortname || LANGUAGE_ESCAPE_FORMATS[key].name;
     document.getElementById("select-escape-code-format")
       .querySelector("span")
-      .appendChild(span);
-    span.addEventListener("click", change_escape_code_format);
+      .appendChild(choice);
+    choice.addEventListener("click", change_escape_code_format);
     if (!firstEscapeCode)
     {
-      span.setAttribute("active", "");
+      choice.setAttribute("active", "");
       firstEscapeCode = key;
     }
   });
@@ -584,7 +710,7 @@ function change_escape_code_format()
 function set_escape_code_format(key)
 {
   document.getElementById("select-escape-code-format")
-    .querySelectorAll("span > span")
+    .querySelectorAll("a")
     .forEach(elem => {
       elem.toggleAttribute('active', elem.getAttribute('data-key') == key);
     });
@@ -594,8 +720,94 @@ function set_escape_code_format(key)
 }
 set_escape_code_format(Object.keys(LANGUAGE_ESCAPE_FORMATS)[0]);
 
-// Launch immediately.
-run_unicode_debugger();
+// Hook up events for the input format.
+document.getElementById("select-input-format")
+  .querySelectorAll("a")
+  .forEach(elem => {
+    elem.addEventListener("click", change_input_format);
+  });
+function get_input_format()
+{
+  let choices = document.getElementById("select-input-format")
+    .querySelectorAll("a");
+  for (let choice of choices)
+    if (choice.hasAttribute('active'))
+      return choice.getAttribute('data-key');
+  throw "text";
+}
+function change_input_format()
+{
+  let key = this.getAttribute('data-key');
+  set_input_format(key);
+}
+function set_input_format(key, isfirstload)
+{
+  // Don't update the input if there is no change because
+  // it will normalize the input.
+  if (get_input_format() == key)
+    return;
+
+  // Get the current text.
+  let { text, charmap } = get_input_text();
+
+  // Update the format selection by changing the "active" span.
+  document.getElementById("select-input-format")
+    .querySelectorAll("a")
+    .forEach(elem => {
+      elem.toggleAttribute('active', elem.getAttribute('data-key') == key);
+    });
+
+  if (isfirstload)
+    return;
+
+  // Render the text in the new format into the input box.
+  let format = get_input_format();
+  let input;
+  if (format == "text")
+  {
+    input = text;
+  }
+  else
+  {
+    // Debug the string to get segmented code points.
+    var textdgb = debug_unicode_string(text, charmap);
+
+    // Separate surrogate pairs, code points, and
+    // extended grapheme clusters with increasing
+    // numbers of spaces. But if there are no
+    // surrogate pairs or non-trivial clusters, don't
+    // add extraneous spaces.
+    let cu_sep = "";
+    textdgb.forEach(egc => {
+      egc.codepoints.forEach(cp => {
+        if (format == "utf16" && cp.utf16)
+          cu_sep = " ";
+      });
+    });
+    let cp_sep = cu_sep;
+    textdgb.forEach(egc => {
+      if (egc.codepoints.length > 1)
+        cp_sep = cu_sep + " ";
+    });
+    let cluster_sep = cp_sep + " ";
+    input = "";
+    textdgb.forEach(egc => {
+      if (input.length != 0)
+        input += cluster_sep;
+      egc.codepoints.forEach((cp, i) => {
+        if (i != 0)
+          input += cp_sep;
+        if (format == "utf16" && cp.utf16)
+          input += zeropadhex(cp.utf16[0].int, 4) + cu_sep + zeropadhex(cp.utf16[1].int, 4);
+        else
+          input += zeropadhex(cp.codepoint.int, 4);
+      });
+    });
+  }
+  document.getElementById("input").value = input;
+
+  update_url_fragment();
+}
 
 // Update when the hash changes.
 function scrollToSelectedText()
@@ -611,18 +823,38 @@ function scrollToSelectedText()
 }
 document.getElementById("input")
   .addEventListener("selectionchange", scrollToSelectedText);
+
+// Trigger the unicode debugger based on changes to
+// the URL fragment.
+addEventListener("hashchange", onhashchange);
+
+function onhashchange() {
+  // Update inputs from the URL fragment.
+
+  const fragment = new URLSearchParams(
+     window.location.hash.substring(1));
+
+  set_input_format(fragment.get("f") || "text", true);
+
+  let text = decodeURIComponent(fragment.get("run"));
+  document.getElementById("input").value = text;
+
+  // Run the debugger.
+
+  run_unicode_debugger();
+}
+
+// Launch immediately.
+onhashchange();
+
+// Update the hash when the input changes.
+// Set the event handler after the page is
+// initialized.
 document.getElementById("input")
   .addEventListener("input", (event) => {
     // Update hash when the input textarea changes.
-    let text = document.getElementById("input").value;
-    set_url_fragment_text(text);
-    
-    // scrollToSelectedText() is called via the hash change event
+    // The hashchange event in turn triggers a re-run
+    // of the unicode debugger function, which at the
+    // end scrolls the output to match the selection.
+    update_url_fragment();
   });
-
-// Update when the hash changes.
-addEventListener("hashchange", (event) => {
-  run_unicode_debugger();
-  scrollToSelectedText();
-});
-
