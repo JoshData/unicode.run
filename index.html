@@ -83,30 +83,50 @@
           font-weight: bold;
         }
 
-      tbody#output > tr
+      div.cluster-container
       {
-        background-color: #EFF;
+        margin: 1em -1em;
+        padding: 1em;
+        border: 1px solid black;
       }
-      tbody#output > tr.every-other-row
-      {
-        background-color: #FEF;
-      }
-      tbody#output > tr.bidi
-      {
-        background-color: transparent;
-      }
-        tbody#output > tr.bidi td
+
+        .cluster-display
         {
-          padding: 1em .5em .5em .5em;
+          font-size: 325%;
+          text-align: center;
         }
 
-      .egc, .codepoint_raw, .codepoint_hex
+      .card.codepoint
       {
-        font-size: 130%;
+        display: inline-block;
+        vertical-align: top;
+        width: 12em;
+        margin: 0 2em 2em 0;
+        min-height: 13em;
+      }
+
+      .card.codepoint .codepoint_display
+      {
+        font-size: 300%;
+        text-align: center;
+        white-space: pre; /* prevents space characters from collapsing to no size */
+      }
+        .codepoint_normalization .card.codepoint
+        {
+          font-size: 80%;
+        }
+
+      .card.codepoint .codepoint_hex
+      {
         text-align: center;
       }
 
-      .egc, .codepoint_raw, .codepoint_hex, .codepoint_info
+      .egc, .codepoint_hex
+      {
+        font-size: 130%;
+      }
+
+      .egc, .codepoint_info
       {
         padding: .5em;
       }
@@ -126,6 +146,22 @@
       .escapecode
       {
         display: none;
+      }
+
+      /* Dark Color Scheme */
+
+      /* https://coolors.co/274154-7b435b-98b6b1-629677-e76f51 */
+
+      body
+      {
+        background-color: #274154;
+        color: white;
+      }
+
+      .card.codepoint
+      {
+        background-color: #70427A;
+        color: white;
       }
     </style>
   </head>
@@ -191,20 +227,8 @@
           </span>
       </div>
 
-      <table>
-          <thead>
-            <tr>
-              <th rowspan=2 width=100 title="Extended Grapheme Cluster with BIDI Mirror Replacements">Displayed Character</th>
-              <th colspan=3>Code Point</th>
-            </tr>
-            <tr>
-              <th></th>
-              <th>Hex</th>
-            </tr>
-          </thead>
-          <tbody id="output">
-          </tbody>
-      </table>
+      <div id="codepoints">
+      </div>
 
     </div> <!-- /container -->
     </div> <!-- /#content-area -->

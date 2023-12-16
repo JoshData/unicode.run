@@ -385,7 +385,7 @@ function run_unicode_debugger()
   let utf16_code_units = 0;
   let utf8_length = 0;
 
-  let output_table = document.getElementById('output');
+  let output_table = document.getElementById('codepoints');
   output_table.innerText = ""; // clear
 
   let warnings_table = document.getElementById('warnings');
@@ -442,52 +442,38 @@ function run_unicode_debugger()
       return text;
     }
 
-    // Create the cluster display.
-    let row = document.createElement('tr');
-    if (i % 2 == 0)
-      row.setAttribute('class', 'every-other-row');
-    output_table.appendChild(row);
-    let cluster_cell = document.createElement('td');
-    row.appendChild(cluster_cell);
-    cluster_cell.setAttribute('rowspan',
-                              cluster.codepoints.length
-                              + (cluster.nfc ? 1 : 0)
-                              + (cluster.nfd ? 1 : 0));
-    cluster_cell.setAttribute('valign', 'top');
-    cluster_cell.setAttribute('class', 'unicode-content egc');
-    cluster_cell.innerText = displayCodePoint(cluster);
-
-    function createCodePointRow(codepoint, row, hide_character)
+    function createCodePointCard(codepoint, row)
     {
-      let cell = document.createElement('td');
-      row.appendChild(cell);
-      cell.setAttribute('class', 'unicode-content codepoint_raw');
-      cell.setAttribute('valign', 'top');
-      if (!hide_character)
-        cell.innerText = displayCodePoint(codepoint);
+      let card = document.createElement('div');
+      row.appendChild(card);
+      card.setAttribute('class', 'card codepoint');
 
-      cell = document.createElement('td');
-      row.appendChild(cell);
-      cell.setAttribute('class', 'codepoint_hex');
-      cell.setAttribute('valign', 'top');
-      cell.innerHTML = format_codepoint_code(codepoint.codepoint);
+      let card_body = document.createElement('div');
+      card.appendChild(card_body);
+      card_body.setAttribute('class', 'card-body');
 
-      cell = document.createElement('td');
-      cell.setAttribute('class', 'codepoint_info');
-      row.appendChild(cell);
+      let codepoint_display = document.createElement('div');
+      card_body.appendChild(codepoint_display);
+      codepoint_display.setAttribute('class', 'unicode-content codepoint_display');
+      codepoint_display.innerText = displayCodePoint(codepoint);
 
-      let line1 = document.createElement('div');
-      line1.setAttribute('class', 'codepoint_name');
-      cell.appendChild(line1);
-      line1.innerText = codepoint.name;
+      let codepoint_hex = document.createElement('h5');
+      card_body.appendChild(codepoint_hex);
+      codepoint_hex.setAttribute('class', 'card-title codepoint_hex');
+      codepoint_hex.innerHTML = format_codepoint_code(codepoint.codepoint);
 
-      let line2 = document.createElement('div');
-      line2.setAttribute('class', 'codepoint_attributes');
-      cell.appendChild(line2);
+      let codepoint_name = document.createElement('h6');
+      card_body.appendChild(codepoint_name);
+      codepoint_name.setAttribute('class', 'card-subtitle codepoint_name');
+      codepoint_name.innerText = codepoint.name;
+
+      let codepoint_info = document.createElement('p');
+      codepoint_info.setAttribute('class', 'card-text codepoint_attributes');
+      card_body.appendChild(codepoint_info);
 
       let category_span = document.createElement('span');
       category_span.setAttribute('class', 'codepoint_category');
-      line2.appendChild(category_span);
+      codepoint_info.appendChild(category_span);
       category_span.innerText = codepoint.cat;
 
       let bidiTypeMap = {
@@ -499,22 +485,21 @@ function run_unicode_debugger()
       {
         let span = document.createElement('span');
         span.setAttribute('class', 'codepoint_category');
-        line2.appendChild(span);
+        codepoint_info.appendChild(span);
         span.innerText = bidiTypeMap[codepoint.bidiType];
       }
 
       let textinfo = [];
-
-      if (codepoint.utf16) // useful for Javascript
-        textinfo.push("Two UTF-16 code units.")
 
       if (codepoint.bidi_mirrored_replacement)
         textinfo.push("This character is replaced with its mirrored code point " + codepoint.bidi_mirrored_replacement + " in right-to-left text.");
 
       let other_info = document.createElement('span');
       category_span.setAttribute('class', 'codepoint_category');
-      line2.appendChild(other_info);
+      codepoint_info.appendChild(other_info);
       other_info.innerText = textinfo.join("; ");
+
+      return card;
     }
 
     // Warning about formatting and combining characters
@@ -529,6 +514,30 @@ function run_unicode_debugger()
         formatting_count++;
       if (cluster.codepoints[0].cat.charAt(0) == "M")
         uncombined_combining_chars++;
+    }
+
+    // Create the cluster display.
+    let cluster_container = output_table;
+    if (cluster.codepoints.length > 1 || cluster.nfc || cluster.nfd)
+    {
+      // Create a wrapper div for the cluster.
+      cluster_container = document.createElement('div');
+      cluster_container.setAttribute('class', 'cluster-container');
+      output_table.appendChild(cluster_container);
+
+      if (cluster.codepoints.length > 1)
+      {
+        // Show how the cluster renders.
+        let codepoint_display = document.createElement('div');
+        cluster_container.appendChild(codepoint_display);
+        codepoint_display.setAttribute('class', 'unicode-content cluster-display');
+        codepoint_display.innerText = displayCodePoint(cluster);
+
+        // Explain that this is a cluster.
+        let info = document.createElement('p');
+        cluster_container.appendChild(info);
+        info.innerText = cluster.codepoints.length + " code points make up this extended grapheme cluster:";
+      }
     }
 
     // Create the code points.
@@ -547,29 +556,19 @@ function run_unicode_debugger()
       else if (codepoint.cat.charAt(0) == "C")
         control_count++;
 
-      if (ii > 0)
-      {
-        row = document.createElement('tr');
-        if (i % 2 == 0)
-          row.setAttribute('class', 'every-other-row');
-        output_table.appendChild(row);
-      }
+      let card = createCodePointCard(codepoint, cluster_container);
 
-      // Hide the first codepoint's character if there's
-      // only one codepoint in this EGC and it hasn't been
-      // BIDI mirrored.
-      let hide_character = cluster.codepoints.length == 1
-        && cluster.string == cluster.codepoints[0].string;
-
-      createCodePointRow(codepoint, row, hide_character);
-
-      row.addEventListener("mouseenter", event => {
+      // For all of the cards within a cluster, highlight the character
+      // range of the cluster in the input textarea (since subparts of
+      // a cluster can't be selected probably, if EGC rules are the same
+      // in the browser).
+      cluster_container.addEventListener("mouseenter", event => {
         let textarea = document.getElementById("input");
         textarea.focus(); // selection doesn't show without focus
         textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
       })
       for (let ci = cluster.range[0]; ci <= cluster.range[1]; ci++)
-        window.inputSelectionTargets[ci] = row;
+        window.inputSelectionTargets[ci] = cluster_container;
 
     });
 
@@ -593,27 +592,16 @@ function run_unicode_debugger()
 
     function showDecomposition(decomposition, text, i)
     {
-      let row = document.createElement('tr');
-      if (i % 2 == 0)
-        row.setAttribute('class', 'every-other-row');
-      output_table.appendChild(row);
+      let div = document.createElement('div');
+      cluster_container.appendChild(div);
+      div.setAttribute('class', 'codepoint_normalization');
+      
+      let explanation = document.createElement('p');
+      div.appendChild(explanation);
+      explanation.innerText = text;
 
-      // empty cell under the codepoint raw and hex cells
-      let cell = document.createElement('td');
-      cell.setAttribute('colspan', '2');
-      row.appendChild(cell);
-
-      cell = document.createElement('td');
-      row.appendChild(cell);
-      cell.setAttribute('class', 'codepoint_normalization');
-      cell.innerText = text;
-
-      let table = document.createElement('table');
-      cell.appendChild(table);
       decomposition.forEach(codepoint => {
-        let row = document.createElement('tr');
-        table.appendChild(row);
-        createCodePointRow(codepoint, row);
+        createCodePointCard(codepoint, div);
       });
 
     }

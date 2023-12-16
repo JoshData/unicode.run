@@ -10,3 +10,6 @@ cp node_modules/bootstrap/dist/css/bootstrap.min.css* lib/
 # Get other packages.
 wget -O lib/normalize.css https://cdnjs.cloudflare.com/ajax/libs/normalize/8.0.1/normalize.min.css
 wget -O lib/string-split-grapheme-clusters.js https://cdn.jsdelivr.net/gh/stdlib-js/string-split-grapheme-clusters@umd/browser.js
+
+# Build our local database.
+node build.js
