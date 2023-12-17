@@ -31,6 +31,7 @@
     <style>
       body
       {
+        font-size: 14px;
       }
 
       .unicode-content
@@ -38,6 +39,23 @@
         font-size: 120%;
         font-family: Iosevka sans-serif; /* system fonts probably render the best but Iosevka has nice language support; TODO link to it */
       }
+        .unicode-content.codepoint-space span
+        {
+          display: inline-block;
+          border: 1px dotted white;
+          border-radius: .1em;
+          line-height: 100%;
+        }
+        .unicode-content.codepoint-abbreviation span
+        {
+          display: inline-block;
+          border-radius: .2em;
+          padding: 2px;
+          line-height: 100%;
+          font-weight: bold;
+          font-family: sans-serif;
+          font-size: 70%;
+        }
 
       #header
       {
@@ -85,14 +103,18 @@
 
       div.cluster-container
       {
+        display: inline-block;
+      }
+      div.cluster-container.complex
+      {
         margin: 1em -1em;
         padding: 1em;
         border: 1px solid black;
       }
 
-        .cluster-display
+        .cluster_display
         {
-          font-size: 325%;
+          font-size: 275%;
           text-align: center;
         }
 
@@ -107,7 +129,7 @@
 
       .card.codepoint .codepoint_display
       {
-        font-size: 300%;
+        font-size: 275%;
         text-align: center;
         white-space: pre; /* prevents space characters from collapsing to no size */
       }
@@ -118,22 +140,20 @@
 
       .card.codepoint .codepoint_hex
       {
+        font-size: 1.1rem;
+        font-weight: 300;
+        margin-bottom: .75em;
         text-align: center;
-      }
-
-      .egc, .codepoint_hex
-      {
-        font-size: 130%;
-      }
-
-      .egc, .codepoint_info
-      {
-        padding: .5em;
       }
 
       .codepoint_name
       {
         margin-bottom: .5em;
+      }
+
+      .codepoint_attributes
+      {
+        font-size: .9rem;
       }
 
       .codepoint_category
@@ -148,21 +168,40 @@
         display: none;
       }
 
-      /* Dark Color Scheme */
-
-      /* https://coolors.co/274154-7b435b-98b6b1-629677-e76f51 */
+      /* Light Color Scheme */
 
       body
       {
-        background-color: #274154;
-        color: white;
+        background-color: #FAFAFA;
       }
 
       .card.codepoint
       {
-        background-color: #70427A;
+        background-color: #274154;
         color: white;
       }
+        .cluster-container.selected .card.codepoint
+        {
+          background-color: #278854;
+        }
+        .card.codepoint:hover
+        {
+          background-color: #273344;
+        }
+        .unicode-content.codepoint-space span
+        {
+          color: yellow;
+          border-color: yellow;
+        }
+        .unicode-content.codepoint-abbreviation span
+        {
+          background: #DDDD55;
+          color: black;
+        }
+        .unicode-content.codepoint-illegal
+        {
+          color: red;
+        }
     </style>
   </head>
   <body>

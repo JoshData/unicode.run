@@ -36,6 +36,19 @@ for (let i = 0; i < ucd.UnicodeData.length; i++)
 	}
 }
 
+// Aliases
+let nameAliasesList = JSON.parse(fs.readFileSync('node_modules/ucd-full/NameAliases.json'));
+nameAliasesList.NameAliases.forEach(cp => {
+	if (cp.type == "correction")
+	{
+		db.cp[parseInt(cp.codepoint, 16)].name = cp.alias;
+	}
+	if (cp.type == "abbreviation")
+	{
+		db.cp[parseInt(cp.codepoint, 16)].abbr = cp.alias;
+	}
+});
+
 // Properties
 const properties_of_interest = {
 	"Bidi_Control": true

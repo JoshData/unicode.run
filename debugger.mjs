@@ -393,6 +393,7 @@ function run_unicode_debugger()
 
   let previous_bidi_info = null;
   let bidi_directions = { };
+  let bidi_rtl_different_count = 0;
   let bidi_control_count = 0;
   let control_count = 0;
   let formatting_count = 0;
@@ -408,12 +409,14 @@ function run_unicode_debugger()
       {
         return bidi_level & 1 ? "right-to-left" : "left-to-right";
       }
-      if ((cluster.bidi_level.auto%2) == (cluster.bidi_level.ltr%2) && (cluster.bidi_level.ltr%2) == (cluster.bidi_level.rtl%2))
-        text = "The following characters will render in " + bidi_text(cluster.bidi_level.auto) + " order.";
-      else if ((cluster.bidi_level.auto%2) == (cluster.bidi_level.ltr%2))
-        text = "The following characters will render in " + bidi_text(cluster.bidi_level.auto) + " order (unless the BIDI direction is set by the application to right-to-left, which is unusual).";
+      if ((cluster.bidi_level.auto%2) == (cluster.bidi_level.ltr%2))
+      {
+        text = "The following characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order.";
+        if ((cluster.bidi_level.auto%2) != (cluster.bidi_level.rtl%2))
+          bidi_rtl_different_count++;
+      }
       else
-        text = "The direction that the following characters will render in depends on the application. The characters will render in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction.";
+        text = "The direction that the following characters will appear in depends on the application. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction.";
       if (text != previous_bidi_info)
       {
         previous_bidi_info = text;
@@ -424,22 +427,65 @@ function run_unicode_debugger()
         bidi_directions[cluster.bidi_level.auto % 2] = true;
         bidi_directions[cluster.bidi_level.ltr % 2] = true;
 
-        let row = document.createElement('tr');
-        row.setAttribute('class', 'bidi');
+        let row = document.createElement('p');
         output_table.appendChild(row);
-        let cell = document.createElement('td');
-        row.appendChild(cell);
-        cell.setAttribute('colspan', '4');
-        cell.innerText = text;
+        row.setAttribute('class', 'bidi');
+        row.innerText = text;
       }
     }
 
-    function displayCodePoint(codepoint)
+    function displayCodePoint(codepoint, element, css_class)
     {
       let text = codepoint.string;
-      if (codepoint.cat == "Mn") // something for combining characters to attach to
+
+      // Prepend something for combining characters to attach to.
+      if (codepoint.cat.charAt(0) == "M")
         text = "◌" + text;
-      return text;
+
+      // U+2029 Paragraph Separator & U+2028 Line Separator
+      else if (codepoint.cat == "Zp" || codepoint.cat == "Zl")
+      {
+        text = "¶";
+        css_class += " codepoint-space";
+      }
+
+      // Space characters have no glyph, but by CSS we show
+      // how wide the glyph renders.
+      else if (codepoint.cat.charAt(0) == "Z")
+      {
+        element.innerHTML = "<span>" + text + "</span>";
+        text = null;
+        css_class += " codepoint-space";
+      }
+
+      // Show standard abbreviations for characters that
+      // (hopefully) don't have a glyph.
+      else if (codepoint.abbr)
+      {
+        element.innerHTML = "<span>" + codepoint.abbr + "</span>";
+        text = null;
+        css_class += " codepoint-abbreviation";
+      }
+
+      // Control characters have no glyph and should almost never
+      // appear in text, other than some Cf formatting characters,
+      // which are above.
+      else if (codepoint.cat.charAt(0) == "C")
+      {
+        text = "◈";
+        css_class += " codepoint-illegal";
+      }
+
+      // Invalid Unicode text.
+      else if (codepoint.cat == "??")
+      {
+        text = "�";
+        css_class += " codepoint-illegal";
+      }
+
+      if (text !== null)
+        element.innerText = text;
+      element.setAttribute("class", css_class);
     }
 
     function createCodePointCard(codepoint, row)
@@ -454,8 +500,7 @@ function run_unicode_debugger()
 
       let codepoint_display = document.createElement('div');
       card_body.appendChild(codepoint_display);
-      codepoint_display.setAttribute('class', 'unicode-content codepoint_display');
-      codepoint_display.innerText = displayCodePoint(codepoint);
+      displayCodePoint(codepoint, codepoint_display, "unicode-content codepoint_display");
 
       let codepoint_hex = document.createElement('h5');
       card_body.appendChild(codepoint_hex);
@@ -517,21 +562,21 @@ function run_unicode_debugger()
     }
 
     // Create the cluster display.
-    let cluster_container = output_table;
+    let cluster_container = document.createElement('div');
+    cluster_container.setAttribute('class', 'cluster-container');
+    output_table.appendChild(cluster_container);
     if (cluster.codepoints.length > 1 || cluster.nfc || cluster.nfd)
     {
-      // Create a wrapper div for the cluster.
-      cluster_container = document.createElement('div');
-      cluster_container.setAttribute('class', 'cluster-container');
-      output_table.appendChild(cluster_container);
+      // Create a border because this cluster has more than just
+      // a single card in it.
+      cluster_container.classList.add("complex");
 
       if (cluster.codepoints.length > 1)
       {
         // Show how the cluster renders.
         let codepoint_display = document.createElement('div');
         cluster_container.appendChild(codepoint_display);
-        codepoint_display.setAttribute('class', 'unicode-content cluster-display');
-        codepoint_display.innerText = displayCodePoint(cluster);
+        displayCodePoint(cluster, codepoint_display, "unicode-content cluster_display");
 
         // Explain that this is a cluster.
         let info = document.createElement('p');
@@ -539,6 +584,10 @@ function run_unicode_debugger()
         info.innerText = cluster.codepoints.length + " code points make up this extended grapheme cluster:";
       }
     }
+
+    // Link this up for events.
+    for (let ci = cluster.range[0]; ci <= cluster.range[1]; ci++)
+      window.inputSelectionTargets[ci] = cluster_container;
 
     // Create the code points.
     cluster.codepoints.forEach((codepoint, ii) => {
@@ -558,17 +607,15 @@ function run_unicode_debugger()
 
       let card = createCodePointCard(codepoint, cluster_container);
 
-      // For all of the cards within a cluster, highlight the character
+      // When a card is clicked, highlight the character
       // range of the cluster in the input textarea (since subparts of
       // a cluster can't be selected probably, if EGC rules are the same
       // in the browser).
-      cluster_container.addEventListener("mouseenter", event => {
+      cluster_container.addEventListener("click", event => {
         let textarea = document.getElementById("input");
         textarea.focus(); // selection doesn't show without focus
         textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
       })
-      for (let ci = cluster.range[0]; ci <= cluster.range[1]; ci++)
-        window.inputSelectionTargets[ci] = cluster_container;
 
     });
 
@@ -635,11 +682,13 @@ function run_unicode_debugger()
   else if (has_normalized_form_count)
     addWarning("Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
   if (bidi_control_count > 0)
-    addWarning("Bidirectional Control: This text has bidirectional control code points that can change the rendered order of characters unexpectedly.");
+    addWarning("Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
   else if (Object.keys(bidi_directions).length > 1)
-    addWarning("Bidirectional Text: This text includes parts that are rendered left-to-right and parts that are rendered right-to-left.");
+    addWarning("Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
+  if (bidi_rtl_different_count > 0)
+    addWarning("Bidirectional Text Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");
 
-  scrollToSelectedText();
+  hiliteSelection();
 }
 
 
@@ -797,20 +846,35 @@ function set_input_format(key, isfirstload)
   update_url_fragment();
 }
 
-// Update when the hash changes.
-function scrollToSelectedText()
+function hiliteSelection()
 {
-  return;
-  let ci = document.getElementById("input").selectionStart;
   if (!window.inputSelectionTargets)
     return; // debugger has not been run yet
+  let ci = document.getElementById("input").selectionStart;
+  let cj = document.getElementById("input").selectionEnd;
+
+  // Show at least one selected cluster.
+  if (ci == cj) cj++;
+
+  // Mark clusters as selected..
+  document
+    .querySelectorAll(".cluster-container")
+    .forEach(elem => {
+      elem.classList.remove("selected");
+    });
+  for (let i = ci; i < cj; i++)
+    if (window.inputSelectionTargets[i])
+      window.inputSelectionTargets[i].classList.add("selected");
+
+  /* scrolling is really disruptive
   if (window.inputSelectionTargets[ci])
     window.inputSelectionTargets[ci].scrollIntoView();
   else if (window.inputSelectionTargets[ci - 1]) // cursor is beyond the end of text
     window.inputSelectionTargets[ci - 1].scrollIntoView();
+   */
 }
 document.getElementById("input")
-  .addEventListener("selectionchange", scrollToSelectedText);
+  .addEventListener("selectionchange", hiliteSelection);
 
 // Trigger the unicode debugger based on changes to
 // the URL fragment.
