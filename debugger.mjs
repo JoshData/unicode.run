@@ -12,13 +12,14 @@ import { create_escapes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
 const bidi = bidiFactory();
 
 const default_example_text =
-  "Hi 👋🏽!"
+  "Hi 👋🏽! ⇄ שלום!\u200F";
+  /*
   + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4" // https://tonsky.me/blog/unicode/
   + " שלום (עולם)!"
   + " 🤦🏼‍♂️"
   + "\u202E12345\u202C"
   + "Å\u0333 A\u0333\u030A A\u030A\u0333";
-
+*/
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
 text = "(شەقامی شەوکەت سەعید (مشکۆ"; // https://blog.georeactor.com/osm-1
@@ -265,13 +266,13 @@ function get_input_text()
 
   // Read the input as a series of hex characters
   // giving a stream of code units by grouping
-  // sequences of 2 (UTF-8), 4 (UTF-16), or 8 (UTF-32)
+  // sequences of up to 2 (UTF-8), 4 (UTF-16), or 8 (UTF-32)
   // hex characters. If there is a remainder at the
   // end, left-pad the last one with zeroes. This
   // works well if there is only one code unit given,
   // and it prevents thrashing of the text while typing.
-  // End code units at non-hex characters so that
-  // code units don't need to be zero padded.
+  // End code units at non-hex characters (like spaces)
+  // so that code units don't need to be zero padded.
   //
   // Make a mapping from code unit indexes to the starting
   // and ending character that makes up the byte.
@@ -284,7 +285,7 @@ function get_input_text()
   for (let i = 0; i < text.length; i++)
   {
     let c = text.charAt(i);
-    if (!/[A-Za-z0-9]/.exec(c))
+    if (!/[A-Fa-f0-9]/.exec(c))
     {
       read_chars = 0; // next character starts a new code unit
       continue;
@@ -411,12 +412,12 @@ function run_unicode_debugger()
       }
       if ((cluster.bidi_level.auto%2) == (cluster.bidi_level.ltr%2))
       {
-        text = "The following characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order.";
+        text = "The following characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order:";
         if ((cluster.bidi_level.auto%2) != (cluster.bidi_level.rtl%2))
           bidi_rtl_different_count++;
       }
       else
-        text = "The direction that the following characters will appear in depends on the application. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction.";
+        text = "The direction that the following characters will appear in depends on the application. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction:";
       if (text != previous_bidi_info)
       {
         previous_bidi_info = text;
@@ -488,7 +489,7 @@ function run_unicode_debugger()
       element.setAttribute("class", css_class);
     }
 
-    function createCodePointCard(codepoint, row)
+    function createCodePointCard(codepoint, row, cluster)
     {
       let card = document.createElement('div');
       row.appendChild(card);
@@ -544,6 +545,25 @@ function run_unicode_debugger()
       codepoint_info.appendChild(other_info);
       other_info.innerText = textinfo.join("; ");
 
+      // When a card is clicked, select the text range in the input
+      // that it corresponds to. When the input is text, select the
+      // entire extended grapheme cluster since code points within
+      // a cluster are probably not selectable. But when the input
+      // is in code points, the card's range will be selectable.
+      card.addEventListener("click", event => {
+        let src = codepoint;
+        let format = get_input_format();
+        if (format == "text" && cluster)
+          src = cluster;
+
+        let textarea = document.getElementById("input");
+        textarea.focus(); // selection doesn't show without focus
+        textarea.setSelectionRange(src.range[0], src.range[1] + 1);
+      })
+      for (let ci = codepoint.range[0]; ci <= codepoint.range[1]; ci++)
+        window.inputSelectionTargets[ci] = card;
+
+
       return card;
     }
 
@@ -585,10 +605,6 @@ function run_unicode_debugger()
       }
     }
 
-    // Link this up for events.
-    for (let ci = cluster.range[0]; ci <= cluster.range[1]; ci++)
-      window.inputSelectionTargets[ci] = cluster_container;
-
     // Create the code points.
     cluster.codepoints.forEach((codepoint, ii) => {
       code_point_count++;
@@ -605,18 +621,7 @@ function run_unicode_debugger()
       else if (codepoint.cat.charAt(0) == "C")
         control_count++;
 
-      let card = createCodePointCard(codepoint, cluster_container);
-
-      // When a card is clicked, highlight the character
-      // range of the cluster in the input textarea (since subparts of
-      // a cluster can't be selected probably, if EGC rules are the same
-      // in the browser).
-      cluster_container.addEventListener("click", event => {
-        let textarea = document.getElementById("input");
-        textarea.focus(); // selection doesn't show without focus
-        textarea.setSelectionRange(cluster.range[0], cluster.range[1] + 1);
-      })
-
+      let card = createCodePointCard(codepoint, cluster_container, cluster);
     });
 
     // Show normalization information.
@@ -665,28 +670,30 @@ function run_unicode_debugger()
   setElemText('text-length-utf8', utf8_length);
 
   // Warnings
-  function addWarning(text)
+  function addWarning(css_class, text)
   {
     let div = document.createElement('div');
     warnings_table.appendChild(div);
+    div.setAttribute("class", "alert alert-" + css_class);
+    div.setAttribute("role", "alert");
     div.innerText = text;
   }
   if (control_count > 0)
-    addWarning("Control Codes: The text has invisible control codes.");
+    addWarning("danger", "Control Codes: The text has invisible control codes.");
   if (formatting_count > 0)
-    addWarning("Formatting Characters: The text has invisible formatting characters.");
+    addWarning("danger", "Formatting Characters: The text has invisible formatting characters.");
   if (uncombined_combining_chars)
-    addWarning("Uncombined Combining Characters: The text has a combining character that is misplaced and is not combined with another character.");
+    addWarning("danger", "Uncombined Combining Characters: The text has a combining character that is misplaced and is not combined with another character.");
   if (unnormalized_count)
-    addWarning("Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Choose composed (NFC) or decomposed (NFD) normalization.")
+    addWarning("primary", "Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Choose composed (NFC) or decomposed (NFD) normalization.")
   else if (has_normalized_form_count)
-    addWarning("Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
+    addWarning("warning", "Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
   if (bidi_control_count > 0)
-    addWarning("Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
+    addWarning("danger", "Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
   else if (Object.keys(bidi_directions).length > 1)
-    addWarning("Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
+    addWarning("warning", "Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
   if (bidi_rtl_different_count > 0)
-    addWarning("Bidirectional Text Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");
+    addWarning("warning", "Text Direction Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");
 
   hiliteSelection();
 }
@@ -846,6 +853,18 @@ function set_input_format(key, isfirstload)
   update_url_fragment();
 }
 
+// Make the textarea grow in height automatically.
+// https://stackoverflow.com/a/25621277
+{
+  const tx = document.getElementById("input");
+  tx.style.minHeight = (tx.scrollHeight) + "px";
+  tx.style.overflowY = "hidden";
+  tx.addEventListener("input", () => {
+    tx.style.minHeight = 0;
+    tx.style.minHeight = (tx.scrollHeight) + "px";
+  }, false);
+}
+
 function hiliteSelection()
 {
   if (!window.inputSelectionTargets)
@@ -858,7 +877,7 @@ function hiliteSelection()
 
   // Mark clusters as selected..
   document
-    .querySelectorAll(".cluster-container")
+    .querySelectorAll(".card.codepoint")
     .forEach(elem => {
       elem.classList.remove("selected");
     });
@@ -890,6 +909,7 @@ function onhashchange() {
 
   let text = decodeURIComponent(fragment.get("run"));
   document.getElementById("input").value = text;
+  document.getElementById("input").dispatchEvent(new Event('input', { bubbles: true })); // resize
 
   // Run the debugger.
 

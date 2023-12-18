@@ -36,7 +36,6 @@
 
       .unicode-content
       {
-        font-size: 120%;
         font-family: Iosevka sans-serif; /* system fonts probably render the best but Iosevka has nice language support; TODO link to it */
       }
         .unicode-content.codepoint-space span
@@ -92,12 +91,10 @@
 
       #select-escape-code-format a, #select-input-format a {
         cursor: pointer;
-        color: #5577AA;
         margin: .25em;
         text-decoration: underline;
       }
         #select-escape-code-format a[active], #select-input-format a[active] {
-          color: #4466BB;
           font-weight: bold;
         }
 
@@ -107,7 +104,7 @@
       }
       div.cluster-container.complex
       {
-        margin: 1em -1em;
+        margin: 1em 1em 1em -1em;
         padding: 1em;
         border: 1px solid black;
       }
@@ -175,18 +172,27 @@
         background-color: #FAFAFA;
       }
 
+      a, a:focus, a:visited
+      {
+        color: #274154;
+      }
+        a[active]
+        {
+          color: #4455BB;
+        }
+
       .card.codepoint
       {
         background-color: #274154;
         color: white;
       }
-        .cluster-container.selected .card.codepoint
-        {
-          background-color: #278854;
-        }
         .card.codepoint:hover
         {
           background-color: #273344;
+        }
+        .card.codepoint.selected
+        {
+          background-color: #278854; /* after hover */
         }
         .unicode-content.codepoint-space span
         {
@@ -207,30 +213,35 @@
   <body>
     <div id="header">
       <div class="container">
-      <table>
-        <tr>
-          <td>
-            <img src="logo.png" style="width: 2rem; height: 2rem; margin: 1rem 1rem 1rem 0">
+      <table style="width: 100%; margin: 1rem 0; background-color: inherit;">
+        <tr valign="center">
+          <td style="width: 0;">
+            <img src="logo.png" style="width: 5rem; height: 5rem; margin-right: 1rem;">
           </td>
           <td>
-            <h1>Unicode Debugger</h1>
+            <div>
+
+              <div id="select-input-format" style="line-height: 135%; margin-top: .75rem; margin-bottom: .5rem;">
+                Paste
+                  <a data-key="text" active="" href="#" onclick="return false;">Text</a>
+                  or 
+                  <a data-key="utf32" href="#" onclick="return false;">UTF-32</a> /
+                  <a data-key="utf16" href="#" onclick="return false;">UTF-16BE</a>
+                  code points in hex to run the Unicode debugger.
+              </div>
+
+              <textarea id="input" style="width: 100%; height: 2.5rem; margin: 0; padding: .25rem; line-height: 110%; font-size: 1.5rem;" class="unicode-content"
+               placeholder="Paste some text here."></textarea>
+            </div>
           </td>
         </tr>
       </table>
-
-      <div id="select-input-format">
-        Paste
-          <a data-key="text" active="" href="#" onclick="return false;">Text</a> 
-          <a data-key="utf32" href="#" onclick="return false;">UTF-32</a> 
-          <a data-key="utf16" href="#" onclick="return false;">UTF-16BE</a> 
-      </div>
-      <textarea id="input" style="width: 100%; height: 3.5em; margin: 1rem 0;" class="unicode-content"
-       placeholder="Paste some text here."></textarea>
-      </div>
     </div>
 
     <div id="content-area">
       <div class="container">
+
+      <hr style="margin-top: .25rem;">
 
       <div id="text-length">
         <div data-bs-toggle="popover"
@@ -255,10 +266,12 @@
         </div>
       </div>
 
+      <hr>
+
       <div id="warnings">
       </div>
 
-      <p>The Unicode code points in this text are:</p>
+      <hr>
 
       <div id="select-escape-code-format">
           Show code points as
@@ -266,6 +279,8 @@
           </span>
       </div>
 
+      <hr>
+      
       <div id="codepoints">
       </div>
 
