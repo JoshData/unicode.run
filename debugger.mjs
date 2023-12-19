@@ -5,14 +5,15 @@ import { create_escapes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
 // Ideas
 // * font variants? rarely occur except for CJK
 // * link to https://www.unicode.org/Public/UNIDATA/StandardizedVariants.txt
-// * escape sequences for popular languages, JSON, HTML entity
-// * paste a code point?
 // * edit text because some control points are not editable (like combining chars) or visible
+// * insert characters to see how they affect output like combining characters and BIDI characters
+// * emoji constructor
+// * cite libraries used
 
 const bidi = bidiFactory();
 
 const default_example_text =
-  "Hi 👋🏽! ⇄ שלום!\u200F";
+  "Hi 👋🏻! ⇄ שלום!\u200F";
   /*
   + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4" // https://tonsky.me/blog/unicode/
   + " שלום (עולם)!"
@@ -692,12 +693,25 @@ function run_unicode_debugger()
     addWarning("danger", "Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
   else if (Object.keys(bidi_directions).length > 1)
     addWarning("warning", "Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
-  if (bidi_rtl_different_count > 0)
-    addWarning("warning", "Text Direction Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");
+  /*if (bidi_rtl_different_count > 0) // This is so common and we don't explain it so it's too distracting.
+    addWarning("warning", "Text Direction Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");*/
 
   hiliteSelection();
 }
 
+// Control the fixed positioning of the header
+// and the top margin of the content area as
+// the header's height changes becaue of the
+// autosizing on the textarea and the layout
+// of the tex.t
+const resizeObserver = new ResizeObserver((entries) => {
+  // There should be a single entry since we are observing
+  // just one element.
+  let height = entries[0].borderBoxSize[0].blockSize;
+  document.getElementById('content-area')
+    .style.marginTop = height + "px";
+});
+resizeObserver.observe(document.getElementById('header'))
 
 function set_url_fragment(text, format)
 {

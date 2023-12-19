@@ -124,6 +124,31 @@ export const LANGUAGE_ESCAPE_FORMATS = {
       return "\\u{" + zeropadhex(codepoint, 4) + "}";
     }
   },
+
+  html_named_entity: {
+    name: "HTML Entity (Named)",
+    func: function(codepoint) {
+      let codePointInfo = unicodeCharacterDatabase.cp[codepoint];
+      if (codePointInfo && 'html5_entity' in codePointInfo)
+        return codePointInfo.html5_entity;
+      // Fall back to hex entities.
+      return "&#x" + zeropadhex(codepoint, 0) + ";";
+    }
+  },
+
+  xml_entity_hex: {
+    name: "HTML/XML Entity (Hex)",
+    func: function(codepoint) {
+      return "&#x" + zeropadhex(codepoint, 0) + ";";
+    }
+  },
+
+  xml_entity_dec: {
+    name: "HTML/XML Entity (Decimal)",
+    func: function(codepoint) {
+      return "&#" + codepoint + ";";
+    }
+  },
 };
 
 export function create_escape(codepoint, language)

@@ -1,4 +1,5 @@
 const fs = require('fs');
+const named_entities = require('html-entities/lib/index.js');
 
 // Create a Unicode character database of just
 // properties we use in the debugger.
@@ -67,6 +68,14 @@ propList.PropList.forEach(range => {
 		}
 	}
 });
+
+// HTML Named Entities
+for (let cp in db.cp)
+{
+  let ent = named_entities.encode(String.fromCharCode(cp), { mode: 'extensive' });
+  if (/^&/.exec(ent) && !/^&#/.exec(ent))
+	db.cp[cp].html5_entity = ent;
+}
 
 fs.writeFileSync('lib/unicodeCharacterDatabase.json',
                  "window.unicodeCharacterDatabase = "

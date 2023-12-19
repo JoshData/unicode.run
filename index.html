@@ -29,6 +29,13 @@
     <script type="module" src="debugger.mjs"></script>
 
     <style>
+      /* We don't care about Boostrap's breakpoints.
+         Just set a maximum width and fill the viewport
+         at smaller sizes. */
+      .container {
+        max-width: 1320px;
+      }
+
       body
       {
         font-size: 14px;
@@ -58,7 +65,12 @@
 
       #header
       {
-        height: 25vh;
+        padding: 1rem 0;
+        background-color: inherit;
+      }
+
+      #content-area
+      {
       }
 
       h1
@@ -66,18 +78,12 @@
         font-size: 2rem;
       }
 
-      #content-area
-      {
-        height: 75vh;
-        overflow-y: scroll;
-      }
-
       #text-length > div
       {
         display: inline-block;
         vertical-align: top;
         cursor: default;
-        margin-right: 2em;
+        margin-right: 1.25em;
       }
         #text-length span
         {
@@ -86,7 +92,7 @@
           {
             font-size: 110%;
             font-weight: bold;
-            margin-right: .25em;
+            margin-right: .15em;
           }
 
       #select-escape-code-format a, #select-input-format a {
@@ -94,8 +100,22 @@
         margin: .25em;
         text-decoration: underline;
       }
+        #select-escape-code-format a {
+          display: none;
+        }
         #select-escape-code-format a[active], #select-input-format a[active] {
+          display: inline-block;
           font-weight: bold;
+        }
+        #select-escape-code-format:hover a, #select-escape-code-format.expanded a {
+          display: inline-block;
+        }
+        a#select-escape-code-format-expander {
+          display: inline-block;
+          text-decoration: none;
+        }
+        #select-escape-code-format:hover #select-escape-code-format-expander {
+          display: none;
         }
 
       div.cluster-container
@@ -104,7 +124,7 @@
       }
       div.cluster-container.complex
       {
-        margin: 1em 1em 1em -1em;
+        margin: 1em 1em 1em -.25em; /* left negative margin shouldn't be more than half of the .container padding so that the border doesn't go outside of the viewport */
         padding: 1em;
         border: 1px solid black;
       }
@@ -181,6 +201,16 @@
           color: #4455BB;
         }
 
+      #select-escape-code-format
+      {
+        color: grey;
+      }
+
+      #text-length span:first-child
+      {
+        color: #273344;
+      }
+
       .card.codepoint
       {
         background-color: #274154;
@@ -211,15 +241,14 @@
     </style>
   </head>
   <body>
-    <div id="header">
+    <div id="header" class="fixed-top">
       <div class="container">
-      <table style="width: 100%; margin: 1rem 0; background-color: inherit;">
-        <tr valign="center">
-          <td style="width: 0;">
-            <img src="logo.png" style="width: 5rem; height: 5rem; margin-right: 1rem;">
-          </td>
-          <td>
-            <div>
+        <table style="width: 100%;">
+          <tr valign="top">
+            <td style="width: 0;">
+              <img src="logo.png" style="width: 5rem; height: 5rem; margin-right: 1rem;">
+            </td>
+            <td>
 
               <div id="select-input-format" style="line-height: 135%; margin-top: .75rem; margin-bottom: .5rem;">
                 Paste
@@ -232,16 +261,23 @@
 
               <textarea id="input" style="width: 100%; height: 2.5rem; margin: 0; padding: .25rem; line-height: 110%; font-size: 1.5rem;" class="unicode-content"
                placeholder="Paste some text here."></textarea>
-            </div>
-          </td>
-        </tr>
-      </table>
+
+
+              <div id="select-escape-code-format" style="margin-top: .25em">
+                  Show Below: 
+                  <span>
+                  </span>
+                  <a id="select-escape-code-format-expander" href="#" onclick="document.getElementById('select-escape-code-format').classList.toggle('expanded'); return false;">⋯</a>
+              </div>
+            </td>
+          </tr>
+        </table>
+      </div>
     </div>
 
     <div id="content-area">
       <div class="container">
 
-      <hr style="margin-top: .25rem;">
 
       <div id="text-length">
         <div data-bs-toggle="popover"
@@ -252,12 +288,12 @@
         <div data-bs-toggle="popover"
              data-bs-content="Languages including Python, whose internal representation of text is UTF-32, will give this length.">
           <span id="text-length-codepoints"></span>
-          <span>Unicode Code Points</span> 
+          <span>Code Points</span> 
         </div>
         <div data-bs-toggle="popover"
              data-bs-content="Languages including JavaScript, C#, Java, and C, whose internal representation of text is UTF-16, will give this length.">
           <span id="text-length-utf16"></span>
-          <span>UTF-16 Code Units</span> 
+          <span>UTF-16 Units</span> 
         </div>
         <div data-bs-toggle="popover"
              data-bs-content="Most files are saved in UTF-8 encoding.">
@@ -271,16 +307,6 @@
       <div id="warnings">
       </div>
 
-      <hr>
-
-      <div id="select-escape-code-format">
-          Show code points as
-          <span>
-          </span>
-      </div>
-
-      <hr>
-      
       <div id="codepoints">
       </div>
 
