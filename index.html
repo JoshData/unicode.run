@@ -26,7 +26,7 @@
     <script src="lib/bootstrap.bundle.min.js"></script>
 
     <script src="lib/unicodeCharacterDatabase.json"></script>
-    <script type="module" src="debugger.mjs"></script>
+    <script type="module" src="index.mjs"></script>
 
     <style>
       /* We don't care about Boostrap's breakpoints.
@@ -95,6 +95,12 @@
             margin-right: .15em;
           }
 
+      #select-escape-code-format
+      {
+        position: absolute; /* so that when it's exapnded it doesn't shift other content down */
+        margin: -.25em;
+        padding: .25em;
+      } 
       #select-escape-code-format a, #select-input-format a {
         cursor: pointer;
         margin: .25em;
@@ -205,10 +211,19 @@
       {
         color: grey;
       }
+        #select-escape-code-format:hover, #select-escape-code-format.expanded {
+          border: 1px solid #274154;
+          background-color: white;
+        } 
 
       #text-length span:first-child
       {
         color: #273344;
+      }
+
+      .cluster-container.complex
+      {
+        background-color: #FDFDFD;
       }
 
       .card.codepoint
@@ -238,6 +253,69 @@
         {
           color: red;
         }
+      
+      @media (prefers-color-scheme: dark) {
+        body
+        {
+          background-color: #274154;
+          color: white;
+        }
+
+        a, a:focus, a:visited
+        {
+          color: #EEE;
+        }
+          a[active]
+          {
+            color: yellow;
+          }
+
+        #select-escape-code-format
+        {
+          color: #EEE;
+        }
+          #select-escape-code-format:hover, #select-escape-code-format.expanded {
+            background-color: black;
+          } 
+
+        #text-length span:first-child
+        {
+          color: yellow;
+        }
+
+        .cluster-container.complex
+        {
+          background-color: #273355;
+        }
+
+        .card.codepoint
+        {
+          background-color: #273344;
+          color: white;
+        }
+          .card.codepoint:hover
+          {
+            background-color: #112244;
+          }
+          .card.codepoint.selected
+          {
+            background-color: #278854; /* after hover */
+          }
+          .unicode-content.codepoint-space span
+          {
+            color: yellow;
+            border-color: yellow;
+          }
+          .unicode-content.codepoint-abbreviation span
+          {
+            background: #DDDD55;
+            color: black;
+          }
+          .unicode-content.codepoint-illegal
+          {
+            color: red;
+          }
+      }
     </style>
   </head>
   <body>
@@ -269,6 +347,7 @@
                   </span>
                   <a id="select-escape-code-format-expander" href="#" onclick="document.getElementById('select-escape-code-format').classList.toggle('expanded'); return false;">⋯</a>
               </div>
+              <div style="height: 2em;"> </div> <!-- since select-escape-code-format is absolutely positioned, make something of about the same height in its collapsed state -->
             </td>
           </tr>
         </table>
