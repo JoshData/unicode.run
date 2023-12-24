@@ -3,12 +3,14 @@ import { create_escapes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
 import { make_surrogate_pair, zeropadhex } from './unicode_utils.mjs';
 
 // Ideas
+// * example texts
+// * link to useful resources
 // * font variants? rarely occur except for CJK
-// * link to https://www.unicode.org/Public/UNIDATA/StandardizedVariants.txt
 // * edit text because some control points are not editable (like combining chars) or visible
 // * insert characters to see how they affect output like combining characters and BIDI characters
-// * emoji constructor
-// * cite libraries used
+// * variant/emoji constructor using https://www.unicode.org/Public/UNIDATA/StandardizedVariants.txt
+//   (this is in ucd-full), https://unicode.org/Public/emoji/15.1/
+// * insert code point by name
 
 
 const default_example_text =
@@ -192,7 +194,7 @@ function run_unicode_debugger()
           bidi_rtl_different_count++;
       }
       else
-        text = "The direction that the following characters will appear in depends on the application. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction:";
+        text = "The direction that the following characters will appear in depends on surrounding text or how the application sets the default BIDI direction. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction:";
       if (text != previous_bidi_info)
       {
         previous_bidi_info = text;

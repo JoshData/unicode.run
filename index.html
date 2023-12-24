@@ -69,10 +69,6 @@
         background-color: inherit;
       }
 
-      #content-area
-      {
-      }
-
       h1
       {
         font-size: 2rem;
@@ -354,9 +350,7 @@
       </div>
     </div>
 
-    <div id="content-area">
-      <div class="container">
-
+    <div id="content-area" class="container">
 
       <div id="text-length">
         <div data-bs-toggle="popover"
@@ -389,8 +383,33 @@
       <div id="codepoints">
       </div>
 
+      <div id="about">
+        <hr style="margin: 2rem 0 3em 0;">
+
+        <h2>About Unicode.run</h2>
+
+        <p>Text is <i>unexpectedly</i> complicated. Use Unicode.run to debug text.</p>
+        <p>Here are some things you can do here:</p>
+        <ul>
+          <li>See each code point&rsquo;s escape code in a variety of programming languages.</li>
+          <li>See the &ldquo;length&rdquo; of the text as it would be reported in different programming languages.</li>
+          <li>See when characters (technically &ldquo;extended grapheme clusters&rdquo;) are composed of multiple code points.</li>
+          <li>Select text to highlight the code points in the debugger output, or click code points in the debugger output to highlight them in the text.</li>
+          <li>Switch between the text and its UTF-32 or UTF-16BE hex encodings at the top of the page.</li>
+          <li>See where text changes direction in bidirectional text, and get warnings when text direction depends on where it is used. Mirrored glyphs in bidirectional text are also noted.</li> 
+          <li>Get warnings about hidden code points that can alter the display of the text, invalidly placed combining code points, invalid code points, and characters that are not in normalized form.</li>
+        </ul>
+
+        <p>This is a project by <a href="https://joshdata.me/">JoshData</a>.</p>
+
+        <p>Thanks to
+          <a href="https://www.npmjs.com/package/ucd-full">ucd-full</a>,
+          <a href="https://github.com/stdlib-js/string-split-grapheme-clusters">stdlib-js/string-split-grapheme-clusters</a>,
+          <a href="https://www.npmjs.com/package/bidi-js">bidi-js</a>, and
+          <a href="https://www.npmjs.com/package/html-entities">html-entities</a>.</p>
+      </div>
+
     </div> <!-- /container -->
-    </div> <!-- /#content-area -->
   </body>
 
   <script>
