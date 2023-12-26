@@ -13,12 +13,9 @@ import { make_surrogate_pair, zeropadhex } from './unicode_utils.mjs';
 // * insert code point by name
 
 
-const default_example_text =
-  "Hi 👋🏻! ⇄ שלום!\u200F";
+const default_example_text = "Hi 👋🏻! ⇄ שלום!\u200F";
   /*
   + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4" // https://tonsky.me/blog/unicode/
-  + " שלום (עולם)!"
-  + " 🤦🏼‍♂️"
   + "\u202E12345\u202C"
   + "Å\u0333 A\u0333\u030A A\u030A\u0333";
 */
@@ -28,6 +25,17 @@ text = "(شەقامی شەوکەت سەعید (مشکۆ"; // https://blog.georea
 text = "\u{1D160} \uFB2C" // https://www.unicode.org/faq/normalization.html -- NFC normalization is a decomposition
 */
 
+const examples = [
+  {
+    string: "🧑🏾‍❤️‍💋‍🧑🏻",
+    caption: "the most complex emoji at 10 code points including skin color modifiers, zero-width joinrs, and a variation selector"
+  },
+  {
+    string: "Hi! ‏(שלום!)‏",
+    caption: "bidirectional text with BIDI glyph mirroring and RLMs",
+    link: "https://blog.georeactor.com/osm-1"
+  }
+];
 
 function get_input_text()
 {
@@ -180,8 +188,8 @@ function run_unicode_debugger()
   let unnormalized_count = 0;
 
   textdgb.forEach((cluster, i) => {
-    // Indicate the BIDI info.
-    {
+    // Indicate the BIDI info, unless there's only one EGC.
+    if (textdgb.length > 1) {
       let text;
       function bidi_text(bidi_level)
       {

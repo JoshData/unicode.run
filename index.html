@@ -187,70 +187,11 @@
         display: none;
       }
 
-      /* Light Color Scheme */
-
-      body
-      {
-        background-color: #FAFAFA;
-      }
-
-      a, a:focus, a:visited
-      {
-        color: #274154;
-      }
-        a[active]
-        {
-          color: #4455BB;
-        }
-
-      #select-escape-code-format
-      {
-        color: grey;
-      }
-        #select-escape-code-format:hover, #select-escape-code-format.expanded {
-          border: 1px solid #274154;
-          background-color: white;
-        } 
-
-      #text-length span:first-child
-      {
-        color: #273344;
-      }
-
-      .cluster-container.complex
-      {
-        background-color: #FDFDFD;
-      }
-
-      .card.codepoint
-      {
-        background-color: #274154;
-        color: white;
-      }
-        .card.codepoint:hover
-        {
-          background-color: #273344;
-        }
-        .card.codepoint.selected
-        {
-          background-color: #278854; /* after hover */
-        }
-        .unicode-content.codepoint-space span
-        {
-          color: yellow;
-          border-color: yellow;
-        }
-        .unicode-content.codepoint-abbreviation span
-        {
-          background: #DDDD55;
-          color: black;
-        }
-        .unicode-content.codepoint-illegal
-        {
-          color: red;
-        }
+      /* Color Schemes */
       
-      @media (prefers-color-scheme: dark) {
+      /* unfortunatly I couldn't come up with a nice looking
+         default light color scheme, so dark for everyone
+      @media (prefers-color-scheme: dark) { */
         body
         {
           background-color: #274154;
@@ -311,7 +252,7 @@
           {
             color: red;
           }
-      }
+      /* } // media */
     </style>
   </head>
   <body>
@@ -403,10 +344,12 @@
         <p>This is a project by <a href="https://joshdata.me/">JoshData</a>.</p>
 
         <p>Thanks to
-          <a href="https://www.npmjs.com/package/ucd-full">ucd-full</a>,
-          <a href="https://github.com/stdlib-js/string-split-grapheme-clusters">stdlib-js/string-split-grapheme-clusters</a>,
-          <a href="https://www.npmjs.com/package/bidi-js">bidi-js</a>, and
+          <a href="https://www.npmjs.com/package/ucd-full">ucd-full</a> (based on Unicode 15.1),
+          <a href="https://github.com/stdlib-js/string-split-grapheme-clusters">stdlib-js/string-split-grapheme-clusters</a> (based on Unicode 13),
+          <a href="https://www.npmjs.com/package/bidi-js">bidi-js</a> (based on Unicode 13), and
           <a href="https://www.npmjs.com/package/html-entities">html-entities</a>.</p>
+
+        <p>Nikita Prokopov&rsquo;s <a href="https://tonsky.me/blog/unicode/">The Absolute Minimum Every Software Developer Must Know About Unicode in 2023 (Still No Excuses!)</a> was inspiration for this project.</p>
       </div>
 
     </div> <!-- /container -->
