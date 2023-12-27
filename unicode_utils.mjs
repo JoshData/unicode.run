@@ -202,3 +202,28 @@ function hex_to_array(text, code_unit_size)
 
   return { code_units, posmap };
 }
+
+export function lookup_codepoint(codepoint)
+{
+  // unicodeCharacterDatabase is added via a <script> tag.
+  let codePointInfo = unicodeCharacterDatabase.cp[codepoint];
+  if (!codePointInfo)
+  {
+    // See if this code point is in a ranage.
+    unicodeCharacterDatabase.ranges.forEach(range => {
+      if (range.start <= codepoint && codepoint >= range.end)
+        codePointInfo = {
+          name: range.name.replace(/##/, "#" + zeropadhex(codepoint, 4)),
+          cat: range.cat
+        };
+    });
+  }
+  if (!codePointInfo)
+  {
+    codePointInfo = {
+      name: "Invalid Code Point",
+      cat: "??"
+    };
+  }
+  return codePointInfo;
+}

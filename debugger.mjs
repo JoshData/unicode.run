@@ -1,5 +1,5 @@
 import bidiFactory from './lib/bidi.min.mjs';
-import { get_code_points_from_string, codepoint_to_utf8 } from './unicode_utils.mjs';
+import { get_code_points_from_string, codepoint_to_utf8, lookup_codepoint } from './unicode_utils.mjs';
 
 const bidi = bidiFactory();
 
@@ -8,33 +8,11 @@ function get_code_point_info(cp)
 {
   // Adds general Unicode character database
   // data to the object.
-
-  let cp_decimal = cp.codepoint.int;
-  let codePointInfo = unicodeCharacterDatabase.cp[cp_decimal];
-  if (!codePointInfo)
-  {
-    // See if this code point is in a ranage.
-    unicodeCharacterDatabase.ranges.forEach(range => {
-      if (range.start <= cp_decimal && cp_decimal >= range.end)
-        codePointInfo = {
-          name: range.name.replace(/##/, "#" + cp.codepoint.hex),
-          cat: range.cat
-        };
-    });
-  }
-  if (!codePointInfo)
-  {
-    codePointInfo = {
-      name: "Invalid Code Point",
-      cat: "??"
-    };
-  }
-
   return {
     ...cp,
     
     // Major Unicode Character Data properties
-    ...codePointInfo,
+    ...lookup_codepoint(cp.codepoint.int),
 
     // UTF8 representation
     utf8: codepoint_to_utf8(cp.codepoint.int),

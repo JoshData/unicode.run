@@ -1,4 +1,4 @@
-import { codepoint_to_utf8, make_surrogate_pair, zeropadhex } from './unicode_utils.mjs'
+import { codepoint_to_utf8, make_surrogate_pair, zeropadhex, lookup_codepoint } from './unicode_utils.mjs'
 
 export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_uplushex: {
@@ -128,7 +128,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   html_named_entity: {
     name: "HTML Entity (Named)",
     func: function(codepoint) {
-      let codePointInfo = unicodeCharacterDatabase.cp[codepoint];
+      let codePointInfo = lookup_codepoint(codepoint);
       if (codePointInfo && 'html5_entity' in codePointInfo)
         return codePointInfo.html5_entity;
       // Fall back to hex entities.
