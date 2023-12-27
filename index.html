@@ -43,7 +43,6 @@
 
       .unicode-content
       {
-        font-family: Iosevka sans-serif; /* system fonts probably render the best but Iosevka has nice language support; TODO link to it */
       }
         .unicode-content.codepoint-space span
         {
@@ -192,6 +191,23 @@
         display: none;
       }
 
+      #examples, #about
+      {
+        font-size: 16px;
+      }
+
+      #examples div
+      {
+        margin: .5em .5em .5em -.5em;
+        padding: .5em;
+        cursor: pointer;
+      }
+        #examples div span:first-child
+        {
+          font-size: 150%;
+          margin: .5em;
+        }
+
       /* Color Schemes */
       
       /* unfortunatly I couldn't come up with a nice looking
@@ -200,7 +216,7 @@
         body
         {
           background-color: #274154;
-          color: white;
+          color: #EEE;
         }
 
         a, a:focus, a:visited
@@ -214,20 +230,24 @@
 
         #select-escape-code-format
         {
-          color: #EEE;
         }
           #select-escape-code-format:hover, #select-escape-code-format.expanded {
             background-color: black;
           } 
+          #select-escape-code-format a
+          {
+            color: white;
+          }
 
         #text-length > div > span:first-child
         {
-          color: yellow;
+          color: white;
         }
 
         .cluster-container.complex
         {
-          background-color: #273355;
+          border-color: #273344;
+          background-color: #2A4759;
         }
 
         .card.codepoint
@@ -257,6 +277,11 @@
           {
             color: red;
           }
+
+        #examples div:hover
+        {
+          background-color: #273344;
+        }
       /* } // media */
     </style>
   </head>
@@ -324,10 +349,37 @@
         </div>
       </div>
 
-      <div id="warnings">
+      <div id="warnings" style="margin: 2em 0">
       </div>
 
       <div id="codepoints">
+      </div>
+
+      <div id="examples">
+        <hr style="margin: 2rem 0 3em 0;">
+
+        <h2>Try an example!</h2>
+
+        <div>
+          <span>🧑🏾‍❤️‍💋‍🧑🏻</span>
+          <span>The most complex emoji in the current Unicode standard is composd of 10 code points including skin color modifiers, zero-width joiners, and a variation selector.</span>
+        </div>
+        <div>
+          <span>Å != Å</span>
+          <span>Learn about composing characters and normalized forms.</span>
+        </div>
+        <div>
+          <span>‮12345‬</span>
+          <span>This text renders backwards from the order of its characters using BIDI control code points. Inspired by <a href="https://trojansource.codes/">https://trojansource.codes/</a>.</span>
+        </div>
+        <div>
+          <span>Hi! &rlm;(שלום!)&rlm;</span>
+          <span>This example contains bidirectional text with BIDI glyph mirroring and right-to-left markers. Inspired by <a href="https://blog.georeactor.com/osm-1">https://blog.georeactor.com/osm-1</a>.</span>
+        </div>
+        <div>
+          <span>(שלום!)</span>
+          <span>This bidirectional text displays differently depending on context. Inspired by <a href="https://blog.georeactor.com/osm-1">https://blog.georeactor.com/osm-1</a>.</span>
+        </div>
       </div>
 
       <div id="about">
@@ -344,7 +396,7 @@
           <li>Select text to highlight the code points in the debugger output, or click code points in the debugger output to highlight them in the text.</li>
           <li>Switch between the text and its UTF-32 or UTF-16BE hex encodings at the top of the page.</li>
           <li>See where text changes direction in bidirectional text, and get warnings when text direction depends on where it is used. Mirrored glyphs in bidirectional text are also noted.</li> 
-          <li>Get warnings about hidden code points that can alter the display of the text, invalidly placed combining code points, invalid code points, and characters that are not in normalized form.</li>
+          <li>Get warnings about hidden code points that can alter the display of the text (see <a href="https://trojansource.codes/">https://trojansource.codes/</a>), invalidly placed combining code points, invalid code points, and characters that are not in normalized form.</li>
         </ul>
 
         <p>This is a project by <a href="https://joshdata.me/">JoshData</a>.</p>
@@ -352,8 +404,9 @@
         <p>Thanks to
           <a href="https://www.npmjs.com/package/ucd-full">ucd-full</a> (based on Unicode 15.1),
           <a href="https://github.com/stdlib-js/string-split-grapheme-clusters">stdlib-js/string-split-grapheme-clusters</a> (based on Unicode 13),
-          <a href="https://www.npmjs.com/package/bidi-js">bidi-js</a> (based on Unicode 13), and
-          <a href="https://www.npmjs.com/package/html-entities">html-entities</a>.</p>
+          <a href="https://www.npmjs.com/package/bidi-js">bidi-js</a> (based on Unicode 13),
+          <a href="https://www.npmjs.com/package/html-entities">html-entities</a>,
+          and the <a href="https://rsms.me/inter/">Inter Typeface</a>.</p>
 
         <p>Nikita Prokopov&rsquo;s <a href="https://tonsky.me/blog/unicode/">The Absolute Minimum Every Software Developer Must Know About Unicode in 2023 (Still No Excuses!)</a> was inspiration for this project.</p>
       </div>

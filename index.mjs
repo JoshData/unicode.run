@@ -13,33 +13,15 @@ import { zeropadhex, parse_utf32_hex, parse_utf16be_hex } from './unicode_utils.
 // * insert code point by name
 
 
-const default_example_text = "Hi 👋🏻! ⇄ שלום!\u200F";
+//const default_example_text = "Hi 👋🏻! ⇄ שלום!\u200F";
   /*
   + "\u041D\u0438\u043A\u043E\u043B\u0430\u0439 \u8FD4" // https://tonsky.me/blog/unicode/
   + "\u202E12345\u202C"
-  + "Å\u0333 A\u0333\u030A A\u030A\u0333";
 */
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
 text = "\u{1D160} \uFB2C" // https://www.unicode.org/faq/normalization.html -- NFC normalization is a decomposition
 */
-
-const examples = [
-  {
-    string: "🧑🏾‍❤️‍💋‍🧑🏻",
-    caption: "the most complex emoji at 10 code points including skin color modifiers, zero-width joinrs, and a variation selector"
-  },
-  {
-    string: "Hi! ‏(שלום!)‏",
-    caption: "bidirectional text with BIDI glyph mirroring and RLMs",
-    link: "https://blog.georeactor.com/osm-1"
-  },
-  {
-    string: "(שלום!)",
-    caption: "bidirectional text whose order depends on context",
-    link: "https://blog.georeactor.com/osm-1"
-  }
-];
 
 function get_input_text()
 {
@@ -450,12 +432,12 @@ function update_url_fragment()
 
 // If there is no URL fragment, set an initial
 // example.
-{
+/*{
   const fragment = new URLSearchParams(
      window.location.hash.substring(1));
   if (!fragment.get("run"))
     set_url_fragment(default_example_text, "text");
-}
+}*/
 
 // Create escape code display format choices and hook up events.
 let firstEscapeCode = null;
@@ -511,7 +493,7 @@ function get_input_format()
   for (let choice of choices)
     if (choice.hasAttribute('active'))
       return choice.getAttribute('data-key');
-  throw "text";
+  throw "no active text format";
 }
 function change_input_format()
 {
@@ -647,7 +629,7 @@ function onhashchange() {
 
   set_input_format(fragment.get("f") || "text", true);
 
-  let text = decodeURIComponent(fragment.get("run"));
+  let text = decodeURIComponent(fragment.get("run") || "");
   document.getElementById("input").value = text;
   document.getElementById("input").dispatchEvent(new Event('input', { bubbles: true })); // resize
 
@@ -669,4 +651,17 @@ document.getElementById("input")
     // of the unicode debugger function, which at the
     // end scrolls the output to match the selection.
     update_url_fragment();
+  });
+
+// Hook up examples.
+document.getElementById("examples").querySelectorAll("div")
+  .forEach(elem => {
+    elem.addEventListener("click", () => {
+      // In Firefox, the span's innerText loses right-to-left marks, so we can't use that.
+      set_url_fragment(elem.querySelector("span").firstChild.wholeText, "text");
+
+      // https://www.w3schools.com/howto/howto_js_scroll_to_top.asp
+      document.body.scrollTop = 0; // For Safari
+      document.documentElement.scrollTop = 0; // For Chrome, Firefox, IE and Opera
+    });
   });
