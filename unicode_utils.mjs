@@ -109,3 +109,96 @@ export function get_code_points_from_string(text)
 
   return text;
 }
+
+
+
+export function parse_utf16be_hex(text)
+{
+  let { code_units, posmap } = hex_to_array(text, 4);
+
+  // The code units match Javascript's internal
+  // representation.
+  text = code_units.map(c => String.fromCharCode(c)).join("");
+  return { text, posmap };
+
+}
+
+export function parse_utf32_hex(text)
+{
+  let { code_units, posmap } = hex_to_array(text, 8);
+
+  // Replace code units with surrogate pairs where needed.
+  let codepoints_to_char_pos = new Map();
+  text = "";
+  for (let i = 0; i < code_units.length; i++)
+  {
+    let c = code_units[i];
+    if (c <= 65535)
+    {
+      text += String.fromCharCode(c);
+      codepoints_to_char_pos.set(text.length - 1, posmap.get(i));
+    }
+    else
+    {
+      // Map both halves of the surrogate pair to the same original
+      // characters. They'll be combined again when we replace
+      // surrogate pairs with their code points.
+      // (It seems redundant but since the EGC function requires
+      // a Javascript string, we have to form a string and not
+      // return Unicode code points here.)
+      let sp = make_surrogate_pair(c);
+      text += String.fromCharCode(sp.high);
+      codepoints_to_char_pos.set(text.length - 1, posmap.get(i));
+      text += String.fromCharCode(sp.low);
+      codepoints_to_char_pos.set(text.length - 1, posmap.get(i));
+    }
+  }
+  return { text: text, posmap: codepoints_to_char_pos };
+}
+
+function hex_to_array(text, code_unit_size)
+{
+  // Read the text as a series of hex characters in
+  // groups of up to 2 (UTF-8), 4 (UTF-16), or 8 (UTF-32)
+  // hex characters. End groups at non-hex characters
+  // (like spaces) so that groups don't need to be zero padded.
+  //
+  // If a group has fewer than code_unit_size characters,
+  // left-pad it with zeroes. This works well if there is only
+  // one code unit given, and it prevents thrashing of the text
+  // while typing.
+  //
+  // Also return a mapping from code unit indexes to the starting
+  // and ending character in the text.
+  let code_units = [];
+  let read_chars = 0;
+  let posmap = new Map();
+  for (let i = 0; i < text.length; i++)
+  {
+    let c = text.charAt(i);
+    if (!/[A-Fa-f0-9]/.exec(c))
+    {
+      read_chars = 0; // next character starts a new code unit
+      continue;
+    }
+
+    let v = parseInt(c, 16);
+    if (read_chars % code_unit_size == 0)
+    {
+      code_units.push(v);
+      posmap.set(code_units.length - 1, [i, i]);
+    }
+    else
+    {
+      // shift previous value and add this one
+      let vv = code_units.pop();
+      code_units.push((vv << 4) + v);
+      posmap.set(code_units.length - 1,
+                           [posmap.get(code_units.length - 1)[0],
+                            i]);
+    }
+    read_chars++;
+  }
+
+  return { code_units, posmap };
+}

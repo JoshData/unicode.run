@@ -1,6 +1,6 @@
 import { debug_unicode_string } from './debugger.mjs';
 import { create_escapes, LANGUAGE_ESCAPE_FORMATS } from './unicode_escapes.mjs';
-import { make_surrogate_pair, zeropadhex } from './unicode_utils.mjs';
+import { zeropadhex, parse_utf32_hex, parse_utf16be_hex } from './unicode_utils.mjs';
 
 // Ideas
 // * example texts
@@ -50,110 +50,25 @@ function get_input_text()
   {
     // Return the text and a null character index map.
     return { text: text,
-             charmap: null };
-  }
-
-  // Read the input as a series of hex characters
-  // giving a stream of code units by grouping
-  // sequences of up to 2 (UTF-8), 4 (UTF-16), or 8 (UTF-32)
-  // hex characters. If there is a remainder at the
-  // end, left-pad the last one with zeroes. This
-  // works well if there is only one code unit given,
-  // and it prevents thrashing of the text while typing.
-  // End code units at non-hex characters (like spaces)
-  // so that code units don't need to be zero padded.
-  //
-  // Make a mapping from code unit indexes to the starting
-  // and ending character that makes up the byte.
-  let code_units = [];
-  let read_chars = 0;
-  let code_unit_char_pos = new Map();
-  let code_unit_size = 2; // UTF-8
-  if (format == "utf16") code_unit_size = 4;
-  else if (format == "utf32") code_unit_size = 8;
-  for (let i = 0; i < text.length; i++)
-  {
-    let c = text.charAt(i);
-    if (!/[A-Fa-f0-9]/.exec(c))
-    {
-      read_chars = 0; // next character starts a new code unit
-      continue;
-    }
-
-    let v = parseInt(c, 16);
-    if (read_chars % code_unit_size == 0)
-    {
-      code_units.push(v);
-      code_unit_char_pos.set(code_units.length - 1, [i, i]);
-    }
-    else
-    {
-      // shift previous value and add this one
-      let vv = code_units.pop();
-      code_units.push((vv << 4) + v);
-      code_unit_char_pos.set(code_units.length - 1,
-                           [code_unit_char_pos.get(code_units.length - 1)[0],
-                            i]);
-    }
-    read_chars++;
-  }
-
-  if (format == "utf8")
-  {
-    let decoder = new TextDecoder('utf-8');
-    text = decoder.decode(new Uint8Array(code_units));
-    return { text: text, charmap: null /* TODO */ };
+             posmap: null };
   }
 
   if (format == "utf16")
-  {
-    // The code units match Javascript's internal
-    // representation.
-    let text = code_units.map(c => String.fromCharCode(c)).join("");
-    return { text: text, charmap: code_unit_char_pos };
-  }
+    return parse_utf16be_hex(text);
 
   if (format == "utf32")
-  {
-    // Replace code units with surrogate pairs where needed.
-    let codepoints_to_char_pos = new Map();
-    let text = "";
-    for (let i = 0; i < code_units.length; i++)
-    {
-      let c = code_units[i];
-      if (c <= 65535)
-      {
-        text += String.fromCharCode(c);
-        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
-      }
-      else
-      {
-        // Map both halves of the surrogate pair to the same original
-        // characters. They'll be combined again when we replace
-        // surrogate pairs with their code points.
-        // (It seems redundant but since the EGC function requires
-        // a Javascript string, we have to form a string and not
-        // return Unicode code points here.)
-        let sp = make_surrogate_pair(c);
-        text += String.fromCharCode(sp.high);
-        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
-        text += String.fromCharCode(sp.low);
-        codepoints_to_char_pos.set(text.length - 1, code_unit_char_pos.get(i));
-      }
-    }
-    return { text: text, charmap: codepoints_to_char_pos };
-  }
+    return parse_utf32_hex(text);
 }
 
 function run_unicode_debugger()
 {
   // Get the text.
 
-  let { text, charmap } = get_input_text();
+  let { text, posmap } = get_input_text();
 
   // Debug the string.
 
-  var textdbg = debug_unicode_string(text, charmap);
+  var textdbg = debug_unicode_string(text, posmap);
 
   // Construct the debug table.
 
@@ -611,7 +526,7 @@ function set_input_format(key, isfirstload)
     return;
 
   // Get the current text.
-  let { text, charmap } = get_input_text();
+  let { text, posmap } = get_input_text();
 
   // Update the format selection by changing the "active" span.
   document.getElementById("select-input-format")
@@ -633,7 +548,7 @@ function set_input_format(key, isfirstload)
   else
   {
     // Debug the string to get segmented code points.
-    var textdbg = debug_unicode_string(text, charmap);
+    var textdbg = debug_unicode_string(text, posmap);
 
     // Separate surrogate pairs, code points, and
     // extended grapheme clusters with increasing
