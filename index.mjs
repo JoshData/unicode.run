@@ -21,7 +21,6 @@ const default_example_text = "Hi 👋🏻! ⇄ שלום!\u200F";
 */
 /*
 text = 'Hello Ç Ç 2² 实际/實際 \u{1F468}\u{1F3FB} \u{1F468}\u{200D}\u{1F469}\u{200D}\u{1F467} مشکۆ (مشکۆ) مشکۆ!';
-text = "(شەقامی شەوکەت سەعید (مشکۆ"; // https://blog.georeactor.com/osm-1
 text = "\u{1D160} \uFB2C" // https://www.unicode.org/faq/normalization.html -- NFC normalization is a decomposition
 */
 
@@ -33,6 +32,11 @@ const examples = [
   {
     string: "Hi! ‏(שלום!)‏",
     caption: "bidirectional text with BIDI glyph mirroring and RLMs",
+    link: "https://blog.georeactor.com/osm-1"
+  },
+  {
+    string: "(שלום!)",
+    caption: "bidirectional text whose order depends on context",
     link: "https://blog.georeactor.com/osm-1"
   }
 ];
@@ -149,7 +153,7 @@ function run_unicode_debugger()
 
   // Debug the string.
 
-  var textdgb = debug_unicode_string(text, charmap);
+  var textdbg = debug_unicode_string(text, charmap);
 
   // Construct the debug table.
 
@@ -167,6 +171,7 @@ function run_unicode_debugger()
 
   window.inputSelectionTargets = { };
 
+  let cluster_count = 0;
   let code_point_count = 0;
   let utf16_code_units = 0;
   let utf8_length = 0;
@@ -177,48 +182,50 @@ function run_unicode_debugger()
   let warnings_table = document.getElementById('warnings');
   warnings_table.innerText = ""; // clear
 
-  let previous_bidi_info = null;
   let bidi_directions = { };
-  let bidi_rtl_different_count = 0;
   let bidi_control_count = 0;
+  let bidi_auto_count = 0;
   let control_count = 0;
   let formatting_count = 0;
   let uncombined_combining_chars = 0;
   let has_normalized_form_count = 0;
   let unnormalized_count = 0;
 
-  textdgb.forEach((cluster, i) => {
-    // Indicate the BIDI info, unless there's only one EGC.
-    if (textdgb.length > 1) {
-      let text;
-      function bidi_text(bidi_level)
+  textdbg.forEach(bidi_range => {
+    // Indicate the BIDI info, unless there's only one BIDI range and
+    // just one EGC in the range, in which case the order doesn't matter.
+    // If there is more than one BIDI range, then we need the paragraph
+    // to separate it from other ranges.
+    if (textdbg.length != 1 || bidi_range["egcs"].length > 1) {
+      if (!/^auto-/.exec(bidi_range["dir"]))
       {
-        return bidi_level & 1 ? "right-to-left" : "left-to-right";
-      }
-      if ((cluster.bidi_level.auto%2) == (cluster.bidi_level.ltr%2))
-      {
-        text = "The following characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order:";
-        if ((cluster.bidi_level.auto%2) != (cluster.bidi_level.rtl%2))
-          bidi_rtl_different_count++;
+        text = "The following characters will appear in " + bidi_range["dir"] + " order:";
       }
       else
-        text = "The direction that the following characters will appear in depends on surrounding text or how the application sets the default BIDI direction. The characters will appear in " + bidi_text(cluster.bidi_level.auto) + " order if the BIDI direction is not specified by the application, or is specified as auto. However, many applications have a default left-to-right BIDI direction:";
-      if (text != previous_bidi_info)
       {
-        previous_bidi_info = text;
-
-        // Record the BIDI directions that occur in auto and LTR
-        // modes. Since RTL mode is uncommon, warnings that
-        // punctuation can appear in both directions is unhelpful.
-        bidi_directions[cluster.bidi_level.auto % 2] = true;
-        bidi_directions[cluster.bidi_level.ltr % 2] = true;
-
-        let row = document.createElement('p');
-        output_table.appendChild(row);
-        row.setAttribute('class', 'bidi');
-        row.innerText = text;
+        text = "The direction that the following characters will appear in depends on "
+             + "surrounding text or how the application sets the default BIDI direction. "
+             + "The characters will appear in " + bidi_range["dir"].substr(5)
+             + " order if the BIDI direction is not specified by the application, or if it is "
+             + "specified as auto. However, many applications have a default left-to-right "
+             + "BIDI direction:";
+         bidi_auto_count++;
       }
+
+      // Record the BIDI directions that occur in auto and LTR
+      // modes. Since RTL mode is uncommon, warnings that
+      // punctuation can appear in both directions is unhelpful.
+      bidi_directions[bidi_range["dir"]] = true;
+
+      let row = document.createElement('p');
+      output_table.appendChild(row);
+      row.setAttribute('class', 'bidi');
+      row.innerText = text;
     }
+
+    bidi_range["egcs"].forEach(cluster => {
+
+    cluster_count++;
 
     function displayCodePoint(codepoint, element, css_class)
     {
@@ -421,19 +428,19 @@ function run_unicode_debugger()
       // The cluster isn't in either NFC or NFD and both
       // forms exist and are distinct, so this is totally bad.
       unnormalized_count++;
-      showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. This character is in a non-normalized form. There are two standard normal forms. The typically preferred form is the shorter composed form (Unicode NFC normalization) which expresses the same character as:", i);
-      showDecomposition(cluster.nfd, "The other form is the decomposed form (Unicode NFD normalization) which expresses the same character as:", i);
+      showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. This character is in a non-normalized form. There are two standard normal forms. The typically preferred form is the shorter composed form (Unicode NFC normalization) which expresses the same character as:");
+      showDecomposition(cluster.nfd, "The other form is the decomposed form (Unicode NFD normalization) which expresses the same character as:");
     }
     else if (cluster.nfc || cluster.nfd)
     {
       has_normalized_form_count++;
       if (cluster.nfc)
-        showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the decomposed normalization form (Unicode NFD), but this character can also equivalently occur as a (typically) shorter sequence code points using Unicode NFC (composed) normalization which is typically preferred:", i);
+        showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the decomposed normalization form (Unicode NFD), but this character can also equivalently occur as a (typically) shorter sequence code points using Unicode NFC (composed) normalization which is typically preferred:");
       else if (cluster.nfd)
-        showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but be aware that this character can also equivalently occur as a longer sequence of code points including this Unicode NFD (decomposed) normalization:", i);
+        showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but be aware that this character can also equivalently occur as a longer sequence of code points including this Unicode NFD (decomposed) normalization:");
     }
 
-    function showDecomposition(decomposition, text, i)
+    function showDecomposition(decomposition, text)
     {
       let div = document.createElement('div');
       cluster_container.appendChild(div);
@@ -449,16 +456,20 @@ function run_unicode_debugger()
 
     }
   });
+  });
 
   // Length table
-  function setElemText(id, text)
+  function setTextLengthElem(id, count)
   {
-    document.getElementById(id).innerText = text;
+    let elem = document.getElementById(id);
+    elem.innerText = count;
+    elem.parentNode.querySelector('span span') // plural s
+      .style = count == 1 ? "display: none" : "";
   }
-  setElemText('text-length-egcs', textdgb.length);
-  setElemText('text-length-codepoints', code_point_count);
-  setElemText('text-length-utf16', utf16_code_units);
-  setElemText('text-length-utf8', utf8_length);
+  setTextLengthElem('text-length-egcs', cluster_count);
+  setTextLengthElem('text-length-codepoints', code_point_count);
+  setTextLengthElem('text-length-utf16', utf16_code_units);
+  setTextLengthElem('text-length-utf8', utf8_length);
 
   // Warnings
   function addWarning(css_class, text)
@@ -481,25 +492,29 @@ function run_unicode_debugger()
     addWarning("warning", "Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
   if (bidi_control_count > 0)
     addWarning("danger", "Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
+  else if (bidi_auto_count > 0)
+    addWarning("danger", "Bidirectional Text Depends on Context: This text includes parts whose direction depends on surrounding text or how the application sets the default BIDI direction.");
   else if (Object.keys(bidi_directions).length > 1)
     addWarning("warning", "Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
-  /*if (bidi_rtl_different_count > 0) // This is so common and we don't explain it so it's too distracting.
-    addWarning("warning", "Text Direction Depends on Context: This text includes parts which may be ordered right-to-left if the application specifies a right-to-left order.");*/
 
   hiliteSelection();
 }
 
 // Control the fixed positioning of the header
 // and the top margin of the content area as
-// the header's height changes becaue of the
+// the header's height changes because of the
 // autosizing on the textarea and the layout
-// of the tex.t
+// of the text. Also have the logo bottom-align
+// with the textarea, but don't change its size
+// because that will affect the height of the header.
 const resizeObserver = new ResizeObserver((entries) => {
   // There should be a single entry since we are observing
   // just one element.
   let height = entries[0].borderBoxSize[0].blockSize;
   document.getElementById('content-area')
-    .style.marginTop = height + "px";
+     .style.marginTop = height + "px";
+  let logo = document.getElementById('logo');
+  logo.style.marginTop = (height - logo.offsetHeight - 60) + "px";
 });
 resizeObserver.observe(document.getElementById('header'))
 
@@ -618,7 +633,7 @@ function set_input_format(key, isfirstload)
   else
   {
     // Debug the string to get segmented code points.
-    var textdgb = debug_unicode_string(text, charmap);
+    var textdbg = debug_unicode_string(text, charmap);
 
     // Separate surrogate pairs, code points, and
     // extended grapheme clusters with increasing
@@ -626,20 +641,25 @@ function set_input_format(key, isfirstload)
     // surrogate pairs or non-trivial clusters, don't
     // add extraneous spaces.
     let cu_sep = "";
-    textdgb.forEach(egc => {
+    textdbg.forEach(bidi_range => {
+    bidi_range['egcs'].forEach(egc => {
       egc.codepoints.forEach(cp => {
         if (format == "utf16" && cp.utf16)
           cu_sep = " ";
       });
     });
+    });
     let cp_sep = cu_sep;
-    textdgb.forEach(egc => {
+    textdbg.forEach(bidi_range => {
+    bidi_range['egcs'].forEach(egc => {
       if (egc.codepoints.length > 1)
         cp_sep = cu_sep + " ";
     });
+    });
     let cluster_sep = cp_sep + " ";
     input = "";
-    textdgb.forEach(egc => {
+    textdbg.forEach(bidi_range => {
+    bidi_range['egcs'].forEach(egc => {
       if (input.length != 0)
         input += cluster_sep;
       egc.codepoints.forEach((cp, i) => {
@@ -650,6 +670,7 @@ function set_input_format(key, isfirstload)
         else
           input += zeropadhex(cp.codepoint.int, 4);
       });
+    });
     });
   }
   document.getElementById("input").value = input;

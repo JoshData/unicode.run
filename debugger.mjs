@@ -165,5 +165,27 @@ export function debug_unicode_string(text, charmap)
   // Add bidirectional text (BIDI) layout information.
   add_bidi_levels(text, egcs);
 
-  return egcs;
+  // Group the EGCs into spans with the same BIDI direction
+  // across multiple BIDI modes.
+  let previous_bidi_info = null;
+  let bidi_groups = [];
+  egcs.forEach(cluster => {
+    let bidi_info;
+    function bidi_text(bidi_level)
+    {
+      return bidi_level & 1 ? "right-to-left" : "left-to-right";
+    }
+    if ((cluster.bidi_level.auto % 2) == (cluster.bidi_level.ltr % 2))
+      bidi_info = bidi_text(cluster.bidi_level.auto);
+    else
+      bidi_info = "auto-" + bidi_text(cluster.bidi_level.auto);
+    if (bidi_info != previous_bidi_info)
+    {
+      bidi_groups.push({ "dir": bidi_info, "egcs": [] })
+      previous_bidi_info = bidi_info;
+    }
+    bidi_groups[bidi_groups.length - 1]["egcs"].push(cluster);
+  });
+
+  return bidi_groups;
 }

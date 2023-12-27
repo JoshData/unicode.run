@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
 
-    <title>The Unicode Debugger @ unicode.run</title>
+    <title>The Unicode Text Debugger @ unicode.run</title>
 
     <!-- https://rsms.me/inter/ -->
     <link rel="preconnect" href="https://rsms.me/">
@@ -74,6 +74,10 @@
         font-size: 2rem;
       }
 
+      #text-length
+      {
+        margin: 1rem 0;
+      }
       #text-length > div
       {
         display: inline-block;
@@ -81,10 +85,10 @@
         cursor: default;
         margin-right: 1.25em;
       }
-        #text-length span
+        #text-length > div > span
         {
         }
-          #text-length span:first-child
+          #text-length > div > span:first-child
           {
             font-size: 110%;
             font-weight: bold;
@@ -96,6 +100,7 @@
         position: absolute; /* so that when it's exapnded it doesn't shift other content down */
         margin: -.25em;
         padding: .25em;
+        min-width: 75%;
       } 
       #select-escape-code-format a, #select-input-format a {
         cursor: pointer;
@@ -215,7 +220,7 @@
             background-color: black;
           } 
 
-        #text-length span:first-child
+        #text-length > div > span:first-child
         {
           color: yellow;
         }
@@ -261,7 +266,7 @@
         <table style="width: 100%;">
           <tr valign="top">
             <td style="width: 0;">
-              <img src="logo.png" style="width: 5rem; height: 5rem; margin-right: 1rem;">
+              <img id="logo" src="logo.png" style="width: 5rem; height: 5rem; margin-right: 1rem;">
             </td>
             <td>
 
@@ -271,11 +276,12 @@
                   or 
                   <a data-key="utf32" href="#" onclick="return false;">UTF-32</a> /
                   <a data-key="utf16" href="#" onclick="return false;">UTF-16BE</a>
-                  code points in hex to run the Unicode debugger.
+                  in hex to run the Unicode text debugger.
               </div>
 
-              <textarea id="input" style="width: 100%; height: 2.5rem; margin: 0; padding: .25rem; line-height: 110%; font-size: 1.5rem;" class="unicode-content"
-               placeholder="Paste some text here."></textarea>
+              <!-- the textarea has dir="auto" to work best for bidirectional text, and then I've added text-align: left to the CSS so that RTL text doesn't appear like it's missing all the way at the other end of the box -->
+              <textarea id="input" style="width: 100%; height: 2.5rem; margin: 0; padding: .25rem; line-height: 110%; font-size: 1.5rem; text-align: left;" class="unicode-content"
+               placeholder="Paste some text here." dir="auto"></textarea>
 
 
               <div id="select-escape-code-format" style="margin-top: .25em">
@@ -291,32 +297,32 @@
       </div>
     </div>
 
+    <hr>
+
     <div id="content-area" class="container">
 
       <div id="text-length">
         <div data-bs-toggle="popover"
              data-bs-content="Technically called &ldquo;extended grapheme clusters&rdquo;. Apparently Swift and Elixir report lengths this way, but they may implement different EGC rules than on this page.">
           <span id="text-length-egcs"></span>
-          <span>Characters</span> 
+          <span>Character<span>s</span></span> 
         </div>
         <div data-bs-toggle="popover"
              data-bs-content="Languages including Python, whose internal representation of text is UTF-32, will give this length.">
           <span id="text-length-codepoints"></span>
-          <span>Code Points</span> 
+          <span>Code Point<span>s</span></span> 
         </div>
         <div data-bs-toggle="popover"
              data-bs-content="Languages including JavaScript, C#, Java, and C, whose internal representation of text is UTF-16, will give this length.">
           <span id="text-length-utf16"></span>
-          <span>UTF-16 Units</span> 
+          <span>UTF-16 Unit<span>s</span></span> 
         </div>
         <div data-bs-toggle="popover"
              data-bs-content="Most files are saved in UTF-8 encoding.">
           <span id="text-length-utf8"></span>
-          <span>UTF-8 Bytes</span> 
+          <span>UTF-8 Byte<span>s</span></span> 
         </div>
       </div>
-
-      <hr>
 
       <div id="warnings">
       </div>
