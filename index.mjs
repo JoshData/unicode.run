@@ -500,11 +500,11 @@ function change_input_format()
   let key = this.getAttribute('data-key');
   set_input_format(key);
 }
-function set_input_format(key, isfirstload)
+function set_input_format(new_format, isfirstload)
 {
   // Don't update the input if there is no change because
   // it will normalize the input.
-  if (get_input_format() == key)
+  if (get_input_format() == new_format)
     return;
 
   // Get the current text.
@@ -514,16 +514,15 @@ function set_input_format(key, isfirstload)
   document.getElementById("select-input-format")
     .querySelectorAll("a")
     .forEach(elem => {
-      elem.toggleAttribute('active', elem.getAttribute('data-key') == key);
+      elem.toggleAttribute('active', elem.getAttribute('data-key') == new_format);
     });
 
   if (isfirstload)
     return;
 
   // Render the text in the new format into the input box.
-  let format = get_input_format();
   let input;
-  if (format == "text")
+  if (new_format == "text")
   {
     input = text;
   }
@@ -541,7 +540,7 @@ function set_input_format(key, isfirstload)
     textdbg.forEach(bidi_range => {
     bidi_range['egcs'].forEach(egc => {
       egc.codepoints.forEach(cp => {
-        if (format == "utf16" && cp.utf16)
+        if (new_format == "utf16" && cp.utf16)
           cu_sep = " ";
       });
     });
@@ -562,7 +561,7 @@ function set_input_format(key, isfirstload)
       egc.codepoints.forEach((cp, i) => {
         if (i != 0)
           input += cp_sep;
-        if (format == "utf16" && cp.utf16)
+        if (new_format == "utf16" && cp.utf16)
           input += zeropadhex(cp.utf16[0].int, 4) + cu_sep + zeropadhex(cp.utf16[1].int, 4);
         else
           input += zeropadhex(cp.codepoint.int, 4);

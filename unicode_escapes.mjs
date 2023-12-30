@@ -3,7 +3,7 @@ import { codepoint_to_utf8, make_surrogate_pair, zeropadhex, lookup_codepoint } 
 export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_uplushex: {
     name: "Hex Code Point",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       // The four/eight-width padding seems to be customary
       // with the U+ prefix. See https://stackoverflow.com/questions/1273693/why-is-u-used-to-designate-a-unicode-code-point.
       if (codepoint <= 65535)
@@ -15,7 +15,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_decimal: {
     name: "Decimal Code Point",
     shortname: "Decimal",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       return codepoint;
     }
   },
@@ -23,7 +23,14 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_utf16: {
     name: "UTF-16 Big Endian",
     shortname: "UTF-16BE",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
+      if (codepoint <= 65535)
+        return zeropadhex(codepoint, 4);
+      let sp = make_surrogate_pair(codepoint);
+      return zeropadhex(sp.high, 4)
+           + " " + zeropadhex(sp.low, 4);
+    },
+    format_text: function(codepoints) {
       if (codepoint <= 65535)
         return zeropadhex(codepoint, 4);
       let sp = make_surrogate_pair(codepoint);
@@ -34,7 +41,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   codepoint_utf8: {
     name: "UTF-8",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       return codepoint_to_utf8(codepoint)
         .map(b => zeropadhex(b, 2))
         .join(" ");
@@ -44,7 +51,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   javascript: {
     name: "Javascript String Literal Escape Code",
     shortname: "Javascript",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       if (codepoint <= 127)
         return "\\x" + zeropadhex(codepoint, 2);
       if (codepoint <= 65535)
@@ -59,7 +66,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   python: {
     name: "Python String Literal Escape Code",
     shortname: "Python",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       // There is also a \U{NAME} escape.
       if (codepoint <= 127)
         return "\\x" + zeropadhex(codepoint, 2);
@@ -72,7 +79,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   cpp: {
     name: "C/C++/C# String Literal Escape Code",
     shortname: "C/C++/C#",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       // The \x### escape sequence is also possible for
       // any code point, but because it accepts an arbitrary
       // number of hex digits and is terminated at the first
@@ -96,7 +103,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     // https://docs.oracle.com/javase/specs/jls/se12/html/jls-3.html
     name: "Java String Literal Escape Code",
     shortname: "Java",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       if (codepoint <= 65535)
         return "\\u" + zeropadhex(codepoint, 4);
       let sp = make_surrogate_pair(codepoint);
@@ -109,7 +116,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     // https://docs.swift.org/swift-book/documentation/the-swift-programming-language/stringsandcharacters/
     name: "Swift String Literal Escape Code",
     shortname: "Swift",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       return "\\u{" + zeropadhex(codepoint, 0) + "}";
     }
   },
@@ -118,7 +125,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     // https://www.php.net/manual/en/language.types.string.php
     name: "PHP String Literal Escape Code",
     shortname: "PHP",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       if (codepoint <= 127)
         return "\\x" + zeropadhex(codepoint, 2);
       return "\\u{" + zeropadhex(codepoint, 4) + "}";
@@ -127,7 +134,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   html_named_entity: {
     name: "HTML Entity (Named)",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       let codePointInfo = lookup_codepoint(codepoint);
       if (codePointInfo && 'html5_entity' in codePointInfo)
         return codePointInfo.html5_entity;
@@ -138,14 +145,14 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   xml_entity_hex: {
     name: "HTML/XML Entity (Hex)",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       return "&#x" + zeropadhex(codepoint, 0) + ";";
     }
   },
 
   xml_entity_dec: {
     name: "HTML/XML Entity (Decimal)",
-    func: function(codepoint) {
+    format_codepoint: function(codepoint) {
       return "&#" + codepoint + ";";
     }
   },
@@ -164,7 +171,7 @@ export function create_escapes(codepoint, languages)
       escapes[language] = {
         key: language,
         name: LANGUAGE_ESCAPE_FORMATS[language].name,
-        escape: LANGUAGE_ESCAPE_FORMATS[language].func(codepoint)
+        escape: LANGUAGE_ESCAPE_FORMATS[language].format_codepoint(codepoint)
       }
     });
   return escapes;
