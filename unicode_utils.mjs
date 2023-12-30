@@ -166,7 +166,8 @@ function hex_to_array(text, code_unit_size)
   // If a group has fewer than code_unit_size characters,
   // left-pad it with zeroes. This works well if there is only
   // one code unit given, and it prevents thrashing of the text
-  // while typing.
+  // while typing which would happen if we left-padded the
+  // entire string.
   //
   // Also return a mapping from code unit indexes to the starting
   // and ending character in the text.

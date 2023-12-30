@@ -4,11 +4,8 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   codepoint_uplushex: {
     name: "Hex Code Point",
     format_codepoint: function(codepoint) {
-      // The four/eight-width padding seems to be customary
-      // with the U+ prefix. See https://stackoverflow.com/questions/1273693/why-is-u-used-to-designate-a-unicode-code-point.
-      if (codepoint <= 65535)
-        return "U+" + zeropadhex(codepoint, 4);
-      return "U+" + zeropadhex(codepoint, 0);
+      // See https://stackoverflow.com/questions/1273693/why-is-u-used-to-designate-a-unicode-code-point.
+      return "U+" + zeropadhex(codepoint, 4);
     }
   },
 
@@ -20,7 +17,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     }
   },
 
-  codepoint_utf16: {
+  utf16: {
     name: "UTF-16 Big Endian",
     shortname: "UTF-16BE",
     format_codepoint: function(codepoint) {
@@ -39,7 +36,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
     }
   },
 
-  codepoint_utf8: {
+  utf8: {
     name: "UTF-8",
     format_codepoint: function(codepoint) {
       return codepoint_to_utf8(codepoint)
@@ -49,7 +46,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   javascript: {
-    name: "Javascript String Literal Escape Code",
+    name: "Javascript String Literal",
     shortname: "Javascript",
     format_codepoint: function(codepoint) {
       if (codepoint <= 127)
@@ -64,7 +61,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   python: {
-    name: "Python String Literal Escape Code",
+    name: "Python String Literal",
     shortname: "Python",
     format_codepoint: function(codepoint) {
       // There is also a \U{NAME} escape.
@@ -77,7 +74,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   cpp: {
-    name: "C/C++/C# String Literal Escape Code",
+    name: "C/C++/C# String Literal",
     shortname: "C/C++/C#",
     format_codepoint: function(codepoint) {
       // The \x### escape sequence is also possible for
@@ -101,7 +98,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   java: {
     // https://docs.oracle.com/javase/specs/jls/se12/html/jls-3.html
-    name: "Java String Literal Escape Code",
+    name: "Java String Literal",
     shortname: "Java",
     format_codepoint: function(codepoint) {
       if (codepoint <= 65535)
@@ -114,7 +111,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   swift: {
     // https://docs.swift.org/swift-book/documentation/the-swift-programming-language/stringsandcharacters/
-    name: "Swift String Literal Escape Code",
+    name: "Swift String Literal",
     shortname: "Swift",
     format_codepoint: function(codepoint) {
       return "\\u{" + zeropadhex(codepoint, 0) + "}";
@@ -123,7 +120,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
 
   php: {
     // https://www.php.net/manual/en/language.types.string.php
-    name: "PHP String Literal Escape Code",
+    name: "PHP String Literal",
     shortname: "PHP",
     format_codepoint: function(codepoint) {
       if (codepoint <= 127)
@@ -133,7 +130,7 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   html_named_entity: {
-    name: "HTML Entity (Named)",
+    name: "HTML Named Entity",
     format_codepoint: function(codepoint) {
       let codePointInfo = lookup_codepoint(codepoint);
       if (codePointInfo && 'html5_entity' in codePointInfo)
@@ -144,14 +141,14 @@ export const LANGUAGE_ESCAPE_FORMATS = {
   },
 
   xml_entity_hex: {
-    name: "HTML/XML Entity (Hex)",
+    name: "HTML/XML Hex Entity",
     format_codepoint: function(codepoint) {
       return "&#x" + zeropadhex(codepoint, 0) + ";";
     }
   },
 
   xml_entity_dec: {
-    name: "HTML/XML Entity (Decimal)",
+    name: "HTML/XML Decimal Entity",
     format_codepoint: function(codepoint) {
       return "&#" + codepoint + ";";
     }
