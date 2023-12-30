@@ -209,7 +209,38 @@ function run_unicode_debugger()
       let category_span = document.createElement('span');
       category_span.setAttribute('class', 'codepoint_category');
       codepoint_info.appendChild(category_span);
-      category_span.innerText = codepoint.cat;
+      const unicode_category_names = {
+        Cc: 'Control',
+        Cf: 'Format',
+        Co: 'Private Use',
+        Cs: 'Surrrogate',
+        Ll: 'Lowercase Letter',
+        Lm: 'Modifier Letter',
+        Lo: 'Other Letter',
+        Lt: 'Titlecase Letter',
+        Lu: 'Uppercase Letter',
+        Mc: 'Spacing Mark',
+        Me: 'Enclosing Mark',
+        Mn: 'Nonspacing Mark',
+        Nd: 'Decimal Number',
+        Nl: 'Letter Number',
+        No: 'Other Number',
+        Pc: 'Connector Punctuation',
+        Pd: 'Dash Punctuation',
+        Pe: 'Close Punctuation',
+        Pf: 'Final Punctuation',
+        Pi: 'Initial Punctuation',
+        Po: 'Other Punctuation',
+        Ps: 'Open Punctuation',
+        Sc: 'Currency Symbol',
+        Sk: 'Modifier Symbol',
+        Sm: 'Math Symbol',
+        So: 'Other Symbol',
+        Zl: 'Line Separator',
+        Zp: 'Paragraph Separator',
+        Zs: 'Space Separator'
+      };
+      category_span.innerText = unicode_category_names[codepoint.cat] + " (" + codepoint.cat + ")";
 
       let bidiTypeMap = {
         L: "LTR",
