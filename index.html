@@ -124,6 +124,20 @@
           display: none;
         }
 
+      #bidi-renderings
+      {
+        margin-top: 1em;
+      }
+        #bidi-renderings th, #bidi-renderings td
+        {
+          min-width: 10vw;
+          text-align: center;
+        }
+        #bidi-renderings td
+        {
+          font-size: 1.5rem;
+        }
+
       div.cluster-container
       {
         display: inline-block;
@@ -205,6 +219,7 @@
         #examples div span:first-child
         {
           font-size: 150%;
+          font-weight: bold;
           margin: .5em;
         }
 
@@ -365,6 +380,10 @@
           <span>The most complex emoji in the current Unicode standard is composd of 10 code points including skin color modifiers, zero-width joiners, and a variation selector.</span>
         </div>
         <div>
+          <span>S̶t̶r̶i̶k̶e̶о𝘂𝘁</span>
+          <span>See how combining characters and misusing unusual characters can be used to create interesting text effects and homographs.</span>
+        </div>
+        <div>
           <span>Å != Å</span>
           <span>Learn about composing characters and normalized forms.</span>
         </div>
@@ -381,9 +400,11 @@
           <span>This bidirectional text displays differently depending on context. Inspired by <a href="https://blog.georeactor.com/osm-1">https://blog.georeactor.com/osm-1</a>.</span>
         </div>
         <div>
-          <span>↙ ~ ↙️ and 你好！/ 你好&#xFF01;&#xFE01;</span>
+          <span>↙ ~ ↙️ and 你好！ ~ 你好&#xFF01;&#xFE01;</span>
           <span>Examples of an emoji variation sequence and an East Asian punctuation positional variant using variation selectors.</span>
         </div>
+
+        <p>Send me other interesting Unicode examples at <a href="https://mastodon.joshdata.me/@josh">@josh@joshdata.me on Mastodon</a>.</p>
       </div>
 
       <div id="about">
@@ -397,11 +418,13 @@
           <li>See each code point&rsquo;s escape code in a variety of programming languages.</li>
           <li>See the &ldquo;length&rdquo; of the text as it would be reported in different programming languages.</li>
           <li>See when characters (technically &ldquo;extended grapheme clusters&rdquo;) are composed of multiple code points.</li>
-          <li>Select text to highlight the code points in the debugger output, or click code points in the debugger output to highlight them in the text.</li>
+          <li>Click code points in the debugger output to highlight them in the text. (In Firefox you can also select text to highlight the code points in the debugger output.)</li>
           <li>Switch between the text and its UTF-32 or UTF-16BE hex encodings at the top of the page.</li>
           <li>See where text changes direction in bidirectional text, and get warnings when text direction depends on where it is used. Mirrored glyphs in bidirectional text are also noted.</li> 
           <li>Get warnings about hidden code points that can alter the display of the text (see <a href="https://trojansource.codes/">https://trojansource.codes/</a>), invalidly placed combining code points, invalid code points, and characters that are not in normalized form.</li>
         </ul>
+
+        <p></p>
 
         <p>This is a project by <a href="https://joshdata.me/">JoshData</a>.</p>
 

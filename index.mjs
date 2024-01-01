@@ -85,8 +85,9 @@ function run_unicode_debugger()
   let control_count = 0;
   let formatting_count = 0;
   let uncombined_combining_chars = 0;
-  let has_normalized_form_count = 0;
+  let can_be_nfc_normalized_count = 0;
   let unnormalized_count = 0;
+  let variation_selector_count = 0;
 
   textdbg.forEach(bidi_range => {
     // Indicate the BIDI info, unless there's only one BIDI range and
@@ -94,13 +95,14 @@ function run_unicode_debugger()
     // If there is more than one BIDI range, then we need the paragraph
     // to separate it from other ranges.
     if (textdbg.length != 1 || bidi_range["egcs"].length > 1) {
+      let bidi_text;
       if (!/^auto-/.exec(bidi_range["dir"]))
       {
-        text = "The following characters will appear in " + bidi_range["dir"] + " order:";
+        bidi_text = "The following characters will appear in " + bidi_range["dir"] + " order:";
       }
       else
       {
-        text = "The direction that the following characters will appear in depends on "
+        bidi_text = "The direction that the following characters will appear in depends on "
              + "surrounding text or how the application sets the default BIDI direction. "
              + "The characters will appear in " + bidi_range["dir"].substr(5)
              + " order if the BIDI direction is not specified by the application, or if it is "
@@ -117,7 +119,7 @@ function run_unicode_debugger()
       let row = document.createElement('p');
       output_table.appendChild(row);
       row.setAttribute('class', 'bidi');
-      row.innerText = text;
+      row.innerText = bidi_text;
     }
 
     bidi_range["egcs"].forEach(cluster => {
@@ -201,6 +203,8 @@ function run_unicode_debugger()
       card_body.appendChild(codepoint_name);
       codepoint_name.setAttribute('class', 'card-subtitle codepoint_name');
       codepoint_name.innerText = codepoint.name;
+      if (/VARIATION SELECTOR/.exec(codepoint.name))
+        variation_selector_count++;
 
       let codepoint_info = document.createElement('p');
       codepoint_info.setAttribute('class', 'card-text codepoint_attributes');
@@ -361,9 +365,11 @@ function run_unicode_debugger()
     }
     else if (cluster.nfc || cluster.nfd)
     {
-      has_normalized_form_count++;
       if (cluster.nfc)
+      {
+        can_be_nfc_normalized_count++;
         showDecomposition(cluster.nfc, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the decomposed normalization form (Unicode NFD), but this character can also equivalently occur as a (typically) shorter sequence code points using Unicode NFC (composed) normalization which is typically preferred:");
+      }
       else if (cluster.nfd)
         showDecomposition(cluster.nfd, "This character can be encoded by multiple equivalent sequences of code points. Your text uses the composed normalization form (Unicode NFC), which is usually preferred, but be aware that this character can also equivalently occur as a longer sequence of code points including this Unicode NFD (decomposed) normalization:");
     }
@@ -387,6 +393,8 @@ function run_unicode_debugger()
   });
 
   // Length table
+  document.getElementById('text-length')
+      .style = cluster_count == 0 ? "display: none" : "";
   function setTextLengthElem(id, count)
   {
     let elem = document.getElementById(id);
@@ -407,6 +415,7 @@ function run_unicode_debugger()
     div.setAttribute("class", "alert alert-" + css_class);
     div.setAttribute("role", "alert");
     div.innerText = text;
+    return div;
   }
   if (control_count > 0)
     addWarning("danger", "Control Codes: The text has invisible control codes.");
@@ -415,15 +424,37 @@ function run_unicode_debugger()
   if (uncombined_combining_chars)
     addWarning("danger", "Uncombined Combining Characters: The text has a combining character that is misplaced and is not combined with another character.");
   if (unnormalized_count)
-    addWarning("primary", "Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Choose composed (NFC) or decomposed (NFD) normalization.")
-  else if (has_normalized_form_count)
-    addWarning("warning", "Unicode can express the same character with different sequences of code points. Choose composed (NFC) or decomposed (NFD) normalization.")
+    addWarning("warning", "Unicode can express the same character with different sequences of code points. Some characters are in an unnormalized form. Use composed (NFC) normalization if possible.")
+  else if (can_be_nfc_normalized_count)
+    addWarning("primary", "Unicode can express the same character with different sequences of code points. Use composed (NFC) normalization if possible.")
   if (bidi_control_count > 0)
-    addWarning("danger", "Bidirectional Control: This text has bidirectional control code points that can change the displayed order of characters unexpectedly.");
+    addWarning("danger", "Hidden Bidirectional Formatting: This text has hidden bidirectional formatting code points that can change the displayed order of characters unexpectedly.");
   else if (bidi_auto_count > 0)
-    addWarning("danger", "Bidirectional Text Depends on Context: This text includes parts whose direction depends on surrounding text or how the application sets the default BIDI direction.");
+  {
+    let div = addWarning("danger", "Bidirectional Text Depends on Context: This text renders differently depending on surrounding text or how the application sets the default BIDI direction. Many applications have a default left-to-right BIDI direction. Hidden bidirectional formatting code points are likely needed to ensure the text renders consistently wherever it appears.");
+    function elem(tag, text, parent, dir)
+    {
+      let e = document.createElement(tag);
+      e.innerText = text;
+      if (dir) e.setAttribute('dir', dir);
+      parent.appendChild(e);
+      return e;
+    }
+    let table = elem("table", "", div);
+    table.setAttribute("id", "bidi-renderings");
+    let trhead = elem("tr", "", table);
+    elem("th", "Auto", trhead);
+    elem("th", "Left-to-Right", trhead);
+    elem("th", "Right-to-Left", trhead);
+    let trbody = elem("tr", "", table);
+    elem("td", text, trbody, "auto");
+    elem("td", text, trbody, "ltr");
+    elem("td", text, trbody, "rtl");
+  }
   else if (Object.keys(bidi_directions).length > 1)
     addWarning("warning", "Bidirectional Text: This text includes parts that are ordered left-to-right and parts that are ordered right-to-left.");
+  if (variation_selector_count > 0)
+    addWarning("primary", "Variation Selector: This text includes a variation selector which is probably intended to select a different glyph related to a code point. Variation selectors are not supported on all browsers and devices and, as with all Unicode, support may depend on available fonts.");
 
   hiliteSelection();
 }
@@ -623,6 +654,7 @@ function hiliteSelection()
     return; // debugger has not been run yet
   let ci = document.getElementById("input").selectionStart;
   let cj = document.getElementById("input").selectionEnd;
+  console.log(ci, cj)
 
   // Show at least one selected cluster.
   if (ci == cj) cj++;
@@ -644,7 +676,7 @@ function hiliteSelection()
     window.inputSelectionTargets[ci - 1].scrollIntoView();
    */
 }
-document.getElementById("input")
+document.getElementById("input") /* only supported in Firefox, couldn't get the window event handler to work in Chrome */
   .addEventListener("selectionchange", hiliteSelection);
 
 // Trigger the unicode debugger based on changes to
