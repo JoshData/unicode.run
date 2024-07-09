@@ -691,7 +691,7 @@ function onhashchange() {
 
   set_input_format(fragment.get("f") || "text", true);
 
-  let text = decodeURIComponent(fragment.get("run") || "");
+  let text = fragment.get("run") || "";
   document.getElementById("input").value = text;
   document.getElementById("input").dispatchEvent(new Event('input', { bubbles: true })); // resize
 
