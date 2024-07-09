@@ -82,6 +82,7 @@ emojiVarSeqs["emoji-variation-sequences"].forEach(item => {
 // HTML Named Entities
 for (let cp in db.cp)
 {
+  if (cp > 65535) continue;
   let ent = named_entities.encode(String.fromCharCode(cp), { mode: 'extensive' });
   if (/^&/.exec(ent) && !/^&#/.exec(ent))
 	db.cp[cp].html5_entity = ent;
