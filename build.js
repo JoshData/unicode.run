@@ -89,5 +89,13 @@ for (let cp in db.cp)
 }
 
 fs.writeFileSync('lib/unicodeCharacterDatabase.json',
-                 "window.unicodeCharacterDatabase = "
-                 + JSON.stringify(db));
+                 "window.unicodeCharacterDatabase = {"
+                 + "\ncp: {\n"
+                 + Object.keys(db.cp).map(x =>
+                 		x + ": " + JSON.stringify(db.cp[x])).join(",\n")
+                 + "\n},"
+                 + "\nranges: [\n"
+                 + db.ranges.map(range =>
+                 		JSON.stringify(range)).join(",\n")
+                 + "\n]"
+                 + "\n};");
