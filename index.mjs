@@ -130,8 +130,17 @@ function run_unicode_debugger()
     {
       let text = codepoint.string;
 
+      // Show standard abbreviations for characters that
+      // (hopefully) don't have a glyph. Some are M-category.
+      if (codepoint.abbr)
+      {
+        element.innerHTML = "<span>" + codepoint.abbr + "</span>";
+        text = null;
+        css_class += " codepoint-abbreviation";
+      }
+
       // Prepend something for combining characters to attach to.
-      if (codepoint.cat.charAt(0) == "M")
+      else if (codepoint.cat.charAt(0) == "M")
         text = "◌" + text;
 
       // U+2029 Paragraph Separator & U+2028 Line Separator
@@ -148,15 +157,6 @@ function run_unicode_debugger()
         element.innerHTML = "<span>" + text + "</span>";
         text = null;
         css_class += " codepoint-space";
-      }
-
-      // Show standard abbreviations for characters that
-      // (hopefully) don't have a glyph.
-      else if (codepoint.abbr)
-      {
-        element.innerHTML = "<span>" + codepoint.abbr + "</span>";
-        text = null;
-        css_class += " codepoint-abbreviation";
       }
 
       // Control characters have no glyph and should almost never
@@ -180,7 +180,7 @@ function run_unicode_debugger()
       element.setAttribute("class", css_class);
     }
 
-    function createCodePointCard(codepoint, row, cluster)
+    function createCodePointCard(codepoint, row, cluster, prevcodepoint)
     {
       let card = document.createElement('div');
       row.appendChild(card);
@@ -260,6 +260,16 @@ function run_unicode_debugger()
       }
 
       let textinfo = [];
+
+      if (codepoint.emojivarseq && prevcodepoint)
+      {
+        Object.keys(codepoint.emojivarseq).forEach(style => {
+          codepoint.emojivarseq[style].forEach(cpint => {
+            if (cpint == prevcodepoint.codepoint.int)
+              textinfo.push("This activates \"" + style + "\" for the previous code point.");
+          })
+        });
+      }
 
       if (codepoint.bidi_mirrored_replacement)
         textinfo.push("This character is replaced with its mirrored code point " + codepoint.bidi_mirrored_replacement + " in right-to-left text.");
@@ -351,7 +361,9 @@ function run_unicode_debugger()
       else if (codepoint.cat.charAt(0) == "C")
         control_count++;
 
-      let card = createCodePointCard(codepoint, cluster_container, cluster);
+      let prevcp = cluster.codepoints[ii - 1];
+
+      let card = createCodePointCard(codepoint, cluster_container, cluster, prevcp);
     });
 
     // Show normalization information.

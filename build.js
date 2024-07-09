@@ -69,6 +69,16 @@ propList.PropList.forEach(range => {
 	}
 });
 
+// Emoji Variation Selector Meaning
+let emojiVarSeqs = JSON.parse(fs.readFileSync('node_modules/ucd-full/emoji/emoji-variation-sequences.json'));
+emojiVarSeqs["emoji-variation-sequences"].forEach(item => {
+	let cp = db.cp[parseInt(item.variationSequence[1], 16)];
+	let style = item.style;
+	if (!cp.emojivarseq) cp.emojivarseq = { };
+	if (!cp.emojivarseq[style]) cp.emojivarseq[style] = [];
+	cp.emojivarseq[style].push(parseInt(item.variationSequence[0], 16))
+});
+
 // HTML Named Entities
 for (let cp in db.cp)
 {
