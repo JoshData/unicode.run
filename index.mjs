@@ -440,7 +440,7 @@ function run_unicode_debugger()
   else if (can_be_nfc_normalized_count)
     addWarning("primary", "Unicode can express the same character with different sequences of code points. Use composed (NFC) normalization if possible.")
   if (bidi_control_count > 0)
-    addWarning("danger", "Hidden Bidirectional Formatting: This text has hidden bidirectional formatting code points that can change the displayed order of characters unexpectedly.");
+    addWarning("danger", "Hidden Bidirectional Formatting: This text has hidden bidirectional formatting code points that can change the displayed order and appearance of characters unexpectedly.");
   else if (bidi_auto_count > 0)
   {
     let div = addWarning("danger", "Bidirectional Text Depends on Context: This text renders differently depending on surrounding text or how the application sets the default BIDI direction. Many applications have a default left-to-right BIDI direction. Hidden bidirectional formatting code points are likely needed to ensure the text renders consistently wherever it appears.");
